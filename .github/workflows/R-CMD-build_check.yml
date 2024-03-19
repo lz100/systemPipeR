@@ -4,10 +4,7 @@
 on:
   push:
     branches:
-      - devel
-  pull_request:
-    branches:
-      - devel
+      - test
 
 name: R-CMD-check
 
@@ -70,6 +67,7 @@ jobs:
           remotes::install_github("HenrikBengtsson/matrixStats", ref="develop") ## temp fix - 03/15/22 
           BiocManager::install("tgirke/systemPipeR", dependencies=TRUE)
           BiocManager::install("tgirke/systemPipeRdata")
+          BiocManager::install("Bioconductor/txdbmaker")
         shell: Rscript {0}
 
       - name: Check
