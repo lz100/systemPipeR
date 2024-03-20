@@ -66,9 +66,11 @@ jobs:
           install.packages(c("BiocManager", "knitcitations", "docopt"))
           remotes::install_github("HenrikBengtsson/matrixStats", ref="develop") ## temp fix - 03/15/22 
           BiocManager::install("tgirke/systemPipeR", dependencies=TRUE)
-          BiocManager::install("tgirke/systemPipeRdata")
+          # BiocManager::install("tgirke/systemPipeRdata")
+          BiocManager::install("Bioconductor/biomaRt")
           BiocManager::install("Bioconductor/GenomeInfoDb")
           BiocManager::install("Bioconductor/txdbmaker")
+          
         shell: Rscript {0}
 
       - name: Check
