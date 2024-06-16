@@ -151,12 +151,88 @@ Please note that if you desire to use a third-party command-line tool, the parti
 tool and dependencies need to be installed and exported in your PATH. 
 See [details](#third-party-software-tools). 
 
-## Loading package and documentation
+## 5 minutes quick start
+The following code chunk demonstrates how to create a simple workflow with
+toy data. The example uses the `systemPipeRdata` package's `RNAseq` template
+to create a pre-configured workflow environment. 
 
-```{r documentation, eval=FALSE}
-library("systemPipeR") # Loads the package
-library(help="systemPipeR") # Lists package info
-vignette("systemPipeR") # Opens vignette
+1. Create the workflow environment and change to the newly created directory. 
+
+```{r eval=FALSE}
+systemPipeRdata::genWorkenvir(workflow = "rnaseq")
+
+setwd("rnaseq")
+```
+
+
+2. Import the workflow from template file
+
+```{r eval=FALSE}
+library(systemPipeR) 
+# init the workflow instance 
+sal <- SPRproject()
+## Creating directory '/home/myuser/systemPipeR/rnaseq/.SPRproject'
+## Creating file '/home/myuser/systemPipeR/rnaseq/.SPRproject/SYSargsList.yml'
+
+# check the empty instance 
+sal 
+## Instance of 'SYSargsList': 
+##  No workflow steps added 
+
+# import 
+sal <- importWF(sal, file_path = "systemPipeRNAseq.Rmd") # populates sal with WF steps defined in Rmd
+```
+
+![](https://systempipe.org/sp/spr/sp_run/listCmdTools.png)
+
+Beside reading the workflow steps, `importWF` function also list required packages, and check if the
+required tools are installed and exported in the PATH. One can see in this example that the `trimmomatic`, `hisat2-build`, `hisat2`, and `samtools` are not found in the PATH, and one needs to install them before running the workflow, 
+or rely on the module system (typically used in HPC environments).
+
+Now we can see the workflow steps in the `sal` object. 
+```{r eval=FALSE}
+sal
+## Instance of 'SYSargsList': 
+##     WF Steps:
+##        1. load_SPR --> Status: Pending
+##        2. preprocessing --> Status: Pending 
+##            Total Files: 36 | Existing: 0 | Missing: 36 
+##          2.1. preprocessReads-pe
+##              cmdlist: 18 | Pending: 18
+##        3. trimming --> Status: Pending 
+##            Total Files: 72 | Existing: 0 | Missing: 72 
+##        ...
+```
+
+All steps are in pending status, and we can run the workflow now.
+
+3. Run the workflow
+```{r eval=FALSE}
+# runs entire workflow;
+sal <- runWF(sal)  # run specific steps are also possible (see ?runWF) 
+```
+
+4. Check the status of the workflow
+```{r eval=FALSE}
+# simply type `sal` to see the status of the workflow
+sal
+```
+
+One should see the status of the workflow steps changing from `Pending` to `Success` or `Failed`.
+![](https://systempipe.org/sp/spr/sp_run/runwf.png)
+5. Visualize the workflow
+```{r eval=FALSE}
+plotWF(sal)
+```
+
+Examples of the workflow plot can be seen in the [visualize workflow section](#visualize-workflow) below.
+
+6. Generate the report
+```{r eval=FALSE}
+# generate scitific report
+sal <- renderReport(sal)
+# generate technical (log) report
+sal <- renderLogs(sal)
 ```
 
 ## How to get help for systemPipeR
@@ -350,116 +426,116 @@ if (file.exists(".SPRproject")) unlink(".SPRproject", recursive = TRUE)
 ## NOTE: Removing previous project create in the quick starts section
 ```
 
-# Quick Start
+<!-- # Quick Start -->
 
-This section will demonstrate how to build a basic workflow. The main features 
-will be briefly illustrated here. The following section will discuss all the 
-alternatives to design and build the workflow and the support features available 
-in _`systemPipeR`_.
+<!-- This section will demonstrate how to build a basic workflow. The main features  -->
+<!-- will be briefly illustrated here. The following section will discuss all the  -->
+<!-- alternatives to design and build the workflow and the support features available  -->
+<!-- in _`systemPipeR`_. -->
 
-- Load sample data and directory structure
+<!-- - Load sample data and directory structure -->
 
-[*systemPipeRdata*](http://bioconductor.org/packages/release/data/experiment/html/systemPipeRdata.html) package is a helper package to generate a fully populated [*systemPipeR*](http://bioconductor.org/packages/release/bioc/html/systemPipeR.html)
-workflow environment in the current working directory with a single command. 
-All the instruction for generating the workflow are provide in the *systemPipeRdata* vignette [here](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRdata.html#1_Introduction). 
+<!-- [*systemPipeRdata*](http://bioconductor.org/packages/release/data/experiment/html/systemPipeRdata.html) package is a helper package to generate a fully populated [*systemPipeR*](http://bioconductor.org/packages/release/bioc/html/systemPipeR.html) -->
+<!-- workflow environment in the current working directory with a single command.  -->
+<!-- All the instruction for generating the workflow are provide in the *systemPipeRdata* vignette [here](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRdata.html#1_Introduction).  -->
 
-```{r genNew_wf, eval=TRUE}
-systemPipeRdata::genWorkenvir(workflow = "new", mydirname = "spr_project")
-```
+<!-- ```{r genNew_wf, eval=TRUE} -->
+<!-- systemPipeRdata::genWorkenvir(workflow = "new", mydirname = "spr_project") -->
+<!-- ``` -->
 
-```{r, eval=FALSE, warning=FALSE}
-setwd("spr_project")
-```
+<!-- ```{r, eval=FALSE, warning=FALSE} -->
+<!-- setwd("spr_project") -->
+<!-- ``` -->
 
-Typically, the user wants to record here the sources and versions of the
-reference genome sequence along with the corresponding annotations. In
-the provided sample data set all data inputs are stored in a `data`
-subdirectory and all results will be written to a separate `results` directory,
-while the `Rmarkdown` workflow file and the `targets` file are expected to be 
-located in the parent directory. 
+<!-- Typically, the user wants to record here the sources and versions of the -->
+<!-- reference genome sequence along with the corresponding annotations. In -->
+<!-- the provided sample data set all data inputs are stored in a `data` -->
+<!-- subdirectory and all results will be written to a separate `results` directory, -->
+<!-- while the `Rmarkdown` workflow file and the `targets` file are expected to be  -->
+<!-- located in the parent directory.  -->
 
-```{r setting_dir, include=FALSE, warning=FALSE}
-knitr::opts_knit$set(root.dir = 'spr_project')
-```
+<!-- ```{r setting_dir, include=FALSE, warning=FALSE} -->
+<!-- knitr::opts_knit$set(root.dir = 'spr_project') -->
+<!-- ``` -->
 
-- Create a project
+<!-- - Create a project -->
 
-_`systemPipeR`_ workflows can be designed and built from start to finish with a 
-single command, importing from an R Markdown file or stepwise in interactive 
-mode from the R console. 
+<!-- _`systemPipeR`_ workflows can be designed and built from start to finish with a  -->
+<!-- single command, importing from an R Markdown file or stepwise in interactive  -->
+<!-- mode from the R console.  -->
 
-To create a Workflow within _`systemPipeR`_, we can start by defining an empty
-container and checking the directory structure:
+<!-- To create a Workflow within _`systemPipeR`_, we can start by defining an empty -->
+<!-- container and checking the directory structure: -->
 
-```{r SPRproject_ex, eval=TRUE}
-sal <- SPRproject() 
-```
+<!-- ```{r SPRproject_ex, eval=TRUE} -->
+<!-- sal <- SPRproject()  -->
+<!-- ``` -->
 
-- Build workflow from RMarkdown file
+<!-- - Build workflow from RMarkdown file -->
 
-The workflow can be created by adding all the analysis steps interact or importing 
-the steps from an R Markdown file.
-After initializing the project with `SPRproject` function, `importWF` function
-will scan and import all the R chunks from the R Markdown file and build all
-the workflow instances. Then, each R chuck in the file will be converted in a workflow step. 
+<!-- The workflow can be created by adding all the analysis steps interact or importing  -->
+<!-- the steps from an R Markdown file. -->
+<!-- After initializing the project with `SPRproject` function, `importWF` function -->
+<!-- will scan and import all the R chunks from the R Markdown file and build all -->
+<!-- the workflow instances. Then, each R chuck in the file will be converted in a workflow step.  -->
 
-```{r importwf_example, eval=TRUE}
-sal <- importWF(sal, 
-                file_path = system.file("extdata", "spr_simple_wf.Rmd", package = "systemPipeR"),
-                verbose = FALSE)
-```
+<!-- ```{r importwf_example, eval=TRUE} -->
+<!-- sal <- importWF(sal,  -->
+<!--                 file_path = system.file("extdata", "spr_simple_wf.Rmd", package = "systemPipeR"), -->
+<!--                 verbose = FALSE) -->
+<!-- ``` -->
 
-This workflow contains five steps. First, it loads _`systemPipeR`_  library, then 
-exports `iris` data set, separating each species' data in a specific file. 
-In the third step, each one of those files will be compressed using `gzip` 
-command line, and later these files will be decompressed. Even though each step 
-is a straightforward process, it is a simple demonstration of the connectivity 
-between command-line and R-based analysis steps. Finally, the last step will
-calculate a mean for sepal length and width and petal length and width, respectively,
-and plot these statistics.
+<!-- This workflow contains five steps. First, it loads _`systemPipeR`_  library, then  -->
+<!-- exports `iris` data set, separating each species' data in a specific file.  -->
+<!-- In the third step, each one of those files will be compressed using `gzip`  -->
+<!-- command line, and later these files will be decompressed. Even though each step  -->
+<!-- is a straightforward process, it is a simple demonstration of the connectivity  -->
+<!-- between command-line and R-based analysis steps. Finally, the last step will -->
+<!-- calculate a mean for sepal length and width and petal length and width, respectively, -->
+<!-- and plot these statistics. -->
 
-- Running workflow
+<!-- - Running workflow -->
 
-Interactive job submissions in a single machine
+<!-- Interactive job submissions in a single machine -->
 
-For running the workflow, `runWF` function will execute all the steps store in 
-the workflow container. The execution will be on a single machine without 
-submitting to a queuing system of a computer cluster. 
+<!-- For running the workflow, `runWF` function will execute all the steps store in  -->
+<!-- the workflow container. The execution will be on a single machine without  -->
+<!-- submitting to a queuing system of a computer cluster.  -->
 
-```{r run_echo, eval=is_win}
-sal <- runWF(sal)
-```
+<!-- ```{r run_echo, eval=is_win} -->
+<!-- sal <- runWF(sal) -->
+<!-- ``` -->
 
-- Visualize workflow
+<!-- - Visualize workflow -->
 
-_`systemPipeR`_ workflows instances can be visualized with the `plotWF` function.
+<!-- _`systemPipeR`_ workflows instances can be visualized with the `plotWF` function. -->
 
-```{r plot_echo, eval=TRUE}
-plotWF(sal, width = "80%", rstudio = TRUE)
-```
+<!-- ```{r plot_echo, eval=TRUE} -->
+<!-- plotWF(sal, width = "80%", rstudio = TRUE) -->
+<!-- ``` -->
 
-- Checking workflow status
+<!-- - Checking workflow status -->
 
-To check the summary of the workflow, we can use:
+<!-- To check the summary of the workflow, we can use: -->
 
-```{r status_echo, eval=TRUE}
-statusWF(sal)
-```
+<!-- ```{r status_echo, eval=TRUE} -->
+<!-- statusWF(sal) -->
+<!-- ``` -->
 
-- Accessing logs report
+<!-- - Accessing logs report -->
 
-_`systemPipeR`_ compiles all the workflow execution logs in one central location,
-making it easier to check any standard output (`stdout`) or standard error
-(`stderr`) for any command-line tools used on the workflow or the R code stdout.
+<!-- _`systemPipeR`_ compiles all the workflow execution logs in one central location, -->
+<!-- making it easier to check any standard output (`stdout`) or standard error -->
+<!-- (`stderr`) for any command-line tools used on the workflow or the R code stdout. -->
 
-```{r logs_echo, eval=FALSE}
-sal <- renderLogs(sal)
-```
+<!-- ```{r logs_echo, eval=FALSE} -->
+<!-- sal <- renderLogs(sal) -->
+<!-- ``` -->
 
-```{r cleaning2, eval=TRUE, include=FALSE}
-if (file.exists(".SPRproject")) unlink(".SPRproject", recursive = TRUE)
-## NOTE: Removing previous project create in the quick starts section
-```
+<!-- ```{r cleaning2, eval=TRUE, include=FALSE} -->
+<!-- if (file.exists(".SPRproject")) unlink(".SPRproject", recursive = TRUE) -->
+<!-- ## NOTE: Removing previous project create in the quick starts section -->
+<!-- ``` -->
 
 # Project initialization
 

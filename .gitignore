@@ -4,11 +4,15 @@
 .Ruserdata
 *.Rproj
 
+rnaseq
+
 # ignore some test folders
 vignettes/rnaseq
 vignettes/varseq
 vignettes/chipseq
 vignettes/riboseq
+vignettes/spr_project/
+vignettes/*_cache/
 
 tests/data2
 tests/param
