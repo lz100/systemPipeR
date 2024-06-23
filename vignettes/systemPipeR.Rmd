@@ -55,56 +55,34 @@ suppressPackageStartupMessages({
 
 # Introduction
 
-[_`systemPipeR`_](http://www.bioconductor.org/packages/devel/bioc/html/systemPipeR.html) is a multipurpose data analysis workflow environment that unifies R with command-line tools [@H_Backman2016-bt]. It enables scientists to analyze many types of data on local or distributed computer systems with a high level of reproducibility, scalability and portability (Figure \@ref(fig:utilities)). At its core is a command-line interface (CLI) that adopts the Common Workflow Language (CWL, Crusoe et al. [-@Crusoe2021-iq]). This design allows users to choose for each analysis step the optimal R or command-line software. It supports both end-to-end and partial execution of workflows with built-in restart functionalities. Efficient management of complex analysis tasks is accomplished by a flexible workflow control container class (_`SYSargsList`_). Handling of large numbers of input samples and experimental designs is facilitated by consistent sample annotation mechanisms. As a multi-purpose workflow toolkit, _`systemPipeR`_ enables users to run existing workflows, customize them or design entirely new ones while taking advantage of widely adopted data structures within the Bioconductor ecosystem. Another important core functionality is the generation of reproducible scientific analysis and technical reports. For result interpretation, _`systemPipeR`_ offers a wide range of plotting functionality, while an associated Shiny App offers many useful functionalities for interactive result exploration. 
+[_`systemPipeR`_](http://www.bioconductor.org/packages/devel/bioc/html/systemPipeR.html) is a multipurpose data analysis workflow environment that unifies R with command-line tools [@H_Backman2016-bt]. It enables scientists to analyze many types of data on personal or distributed computer systems with a high level of reproducibility, scalability and portability (Figure \@ref(fig:utilities)). At its core is a command-line interface (CLI) that adopts the Common Workflow Language [CWL, @Crusoe2021-iq], and allows users to choose for each analysis step the optimal R or command-line software. It supports both end-to-end and partial execution of workflows with built-in restart functionalities. A workflow control container class manages analysis tasks of variable complexity. Handling of large numbers of input samples and experimental designs is facilitated by standardized processing routines of metadata. As a multi-purpose workflow management toolkit, _`systemPipeR`_ enables users to run existing workflows, customize them or design entirely new ones while taking advantage of widely adopted data structures within the Bioconductor ecosystem. Another important core functionality is the generation of reproducible scientific analysis and technical reports. For result interpretation, _`systemPipeR`_ offers a wide range of graphics functionalities, while an associated Shiny App provides many useful functionalities for interactive result exploration. 
 
-```{r utilities, eval=TRUE, warning= FALSE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Relevant features in `systemPipeR`. Workflow design concepts are illustrated under (A). Examples of `systemPipeR's` visualization functionalities are given under (B).", warning=FALSE}
+```{r utilities, eval=TRUE, warning= FALSE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Important functionalities of systemPipeR. (A) Illustration of workflow design concepts, and (B) examples of visualization functionalities for NGS data.", warning=FALSE}
 knitr::include_graphics("images/utilities.png")
 ```
 
-_`systemPipeR's`_ CWL interface provides two
-options to run command-line tools and workflows based on CWL. First, one can
-run CWL in its native way via an R-based wrapper utility for *cwl-runner* or
-*cwl-tools* (CWL-based approach). Second, one can run workflows using CWL's
-command-line and workflow instructions from within R (R-based approach). In the
-latter case the same CWL workflow definition files are used but rendered and
-executed entirely with R functions defined by _`systemPipeR`_, and thus use CWL
-mainly as a command-line and workflow definition format rather than execution
-software to run workflows. The package also provides several convenience
-functions that are useful for designing and debugging workflows, such as a
-command-line rendering function to retrieve the exact command-line strings for
-each step prior to running a command-line. Auto-generation of CWL parameter
-files is also supported, where users simply provide the command-line strings
-for new software to a function and the corresponding `*.cwl` and `*.yml` are
-generated for them. 
+## Workflow management container
 
+At the core of `systemPipeR` is a workflow management container called
+`SYSargsList` or short `SAL`. This S4 class stores all relevant information for
+running and monitoring workflows. This includes the connectivity among workflow
+steps, the paths to their input and output data along with relevant parameter
+values used in each step (see Figure \@ref(fig:sysargslistImage)). `SAL`
+instances can be constructed from a specific metadata table, referred to as
+targets file, R code and/or CWL parameter files (details are below).
+When running preconfigured NGS workflows, the only data the user needs to
+provide are a targets file and the initial input data described in the targets file
+(_e.g._ FASTQ files). If needed the targets file can include additional metadata 
+describing the design of an experiment, including sample labels, replicate information, 
+and other details. Subsequent input/output data generated by the individual workflow steps 
+are tracked internally and can be returned as descendent targets instances. 
 
-```{r general, warning= FALSE, eval=TRUE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Overview of `systemPipeR` workflows management instances. (A) A typical analysis workflow requires multiple software tools (red), metadata for describing the input (green) and output data, and analysis reports for interpreting the results (purple). B) The environment provides utilities for designing and building workflows containing R and/or command-line steps, for managing the workflow runs. C) Options are provided to execute single or multiple workflow steps. This includes a high level of scalability, functionalities for checkpointing, and generating of technical and scientific reports.", warning=FALSE}
-
-knitr::include_graphics("images/general.png")
-```
-
-## Workflow management with _`SYSargsList`_ 
-
-The core of the environment is the `SYSargsList` (short `SAL`) workflow
-management container (an S4 class) that tracks the paths to all input and
-output files along with the corresponding parameters used in each analysis step
-(see Figure \@ref(fig:sysargslistImage)). `SYSargsList` instances are
-constructed from a targets file, which is optional, and two CWL parameter files (for details, see below). 
-When running preconfigured NGS workflows, the only input the user needs to provide is the
-initial targets file containing the paths to the input files (e.g., FASTQ) and
-experiment design information, such as sample labels and biological replicates.
-Subsequent targets instances are created automatically, based on the
-connectivity establish between each workflow step. _`SYSargsList`_ containers
-store all information required for one or multiple steps. This establishes
-central control for running, monitoring and debugging complex workflows from
-start to finish. 
-
-```{r sysargslistImage, warning= FALSE, eval=TRUE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Workflow steps with input/output file operations are controlled by the _`SYSargsList`_ container. Each command-line step (_`SYSargs2`_) can be constructed from a *targets* and two CWL *param* files. In addition, analysis steps containing R code only are defined by _`LineWise`_.", warning=FALSE}
+```{r sysargslistImage, warning= FALSE, eval=TRUE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Workflow management class. Workflows are defined and managed by the `SYSargsList` (`SAL`) control class. Components of `SAL` include `SYSargs2` and/or `LineWise` for defining CL- and R-based workflow steps, respectively. The former are constructed from a `targets` and two CWL *param* files, and the latter comprises mainly R code.", warning=FALSE}
 
 knitr::include_graphics("images/SYSargsList.png")
 ```
 
-## Command-line software support
+## Command-line interface
 
 _`systemPipeR`_ adopts the Common Workflow Language (CWL) [@Amstutz2016-ka], a
 widely used community standard for describing command-line tools and workflows
@@ -113,20 +91,47 @@ text-based YAML (https://yaml.org/) files that are straightforward to create and
 to modify. Adopting CWL in `systemPipeR` improves the sharability, standardization, 
 extensibility and portability of data analysis workflows.
 
-Following the [CWL
-Specifications](https://www.commonwl.org/v1.2/CommandLineTool.html), the basic
-description for executing a command-line software are defined in two files: a
+Following the [CWL Specifications](https://www.commonwl.org/v1.2/CommandLineTool.html), the basic
+description for executing a command-line software are defined by two files: a
 cwl step definition file and a yml configuration file. Figure
-\@ref(fig:sprandCWL) illustrates the utilitity of the two files using “hello world” 
+\@ref(fig:sprandCWL) illustrates the utilitity of the two files using “Hello World” 
 as an example. The cwl file (A) defines the command-line tool (C) along with
 its parameters, and the yml file (B) assigns values to the corresponding parameters.
-For convenience, parameter values can be provided via an easy to maintain tabular targets 
-file (D).
+For convenience, parameter values can provided by the targets file (D, see above), and
+automatically passed on to the corresponding parameters in the yml file. The usage
+of a targets file greatly simplifies the operation of the system for users, because a tabular 
+metadata file is intuitive to maintain, and it eliminates the need of modifying the more complex 
+cwl and yml files directly.
 
-```{r sprandCWL, warning=FALSE, eval=TRUE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Connectivity among cwl, yml and targets files to describe command-line syntax using 'Hello World' message as an example.", warning=FALSE}
+```{r sprandCWL, warning=FALSE, eval=TRUE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Parameter files. Illustration how the different fields in cwl, yml and targets files are connected to assemble command-line calls, here for 'Hello World' example.", warning=FALSE}
 
 knitr::include_graphics("images/SPR_CWL_hello.png")
 ```
+
+## Additional important functionalities
+<!-- _`systemPipeR's`_ CWL interface provides two
+options to run command-line tools and workflows based on CWL. First, one can
+run CWL in its native way via an R-based wrapper utility for *cwl-runner* or
+*cwl-tools* (CWL-based approach). Second, one can run workflows using CWL's
+command-line and workflow instructions from within R (R-based approach). In the
+latter case the same CWL workflow definition files are used but rendered and
+executed entirely with R functions defined by _`systemPipeR`_, and thus use CWL
+mainly as a command-line and workflow definition format rather than execution
+software to run workflows. --> The package also provides several convenience
+functions that are useful for designing and debugging workflows, such as a
+command-line rendering function to retrieve the exact command-line strings for
+each step prior to running a command-line tool. Auto-generation of CWL parameter
+files is also supported. Here, users can simply provide the command-line strings
+for a command-line software of interest to a rendering function that generates 
+the corresponding `*.cwl` and `*.yml` files for them. 
+
+
+<!--
+```{r general, warning= FALSE, eval=TRUE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Overview of `systemPipeR` workflows management instances. (A) A typical analysis workflow requires multiple software tools (red), metadata for describing the input (green) and output data, and analysis reports for interpreting the results (purple). B) The environment provides utilities for designing and building workflows containing R and/or command-line steps, for managing the workflow runs. C) Options are provided to execute single or multiple workflow steps. This includes a high level of scalability, functionalities for checkpointing, and generating of technical and scientific reports.", warning=FALSE}
+
+knitr::include_graphics("images/general.png")
+```
+-->
 
 # Getting Started
 
@@ -146,23 +151,21 @@ BiocManager::install("systemPipeRdata")
 ```
 
 Please note that if you desire to use a third-party command-line tool, the particular
-tool and dependencies need to be installed and exported in your PATH. 
-See [details](#third-party-software-tools). 
+tool and dependencies need to be installed and exported in your PATH (details [here](#third-party-software-tools)). 
 
 ## Five minute quick start
 The following demonstrates how to create a simple workflow with a small toy data set. 
 The example creates a pre-configured workflow environemnt for the `RNA-Seq` toy data set
-from the `systemPipeRdata` package. 
+provided by the `systemPipeRdata` package. 
 
-__(1)__ Create new workflow environment (directory), and change into it (here `rnaseq`). 
+__(1)__ Create new workflow environment directory, and direct R session into it (here `rnaseq`). 
 
 ```{r eval=FALSE}
 systemPipeRdata::genWorkenvir(workflow = "rnaseq")
-
 setwd("rnaseq")
 ```
 
-__(2)__ Initialize workflow project and import workflow from Rmd template file.
+__(2)__ Initialize workflow project and import workflow from `Rmd` template file.
 
 ```{r eval=FALSE}
 library(systemPipeR) 
@@ -177,18 +180,19 @@ sal
 ##  No workflow steps added 
 
 # Import workflow from Rmd template
-sal <- importWF(sal, file_path = "systemPipeRNAseq.Rmd") # populates sal with WF steps defined in Rmd
+sal <- importWF(sal, file_path = "systemPipeRNAseq.Rmd") # import WF steps defined in Rmd into sal
 ```
 
 ![](https://systempipe.org/sp/spr/sp_run/listCmdTools.png)
 
-Beside importing a workflow, the `importWF` function lists required packages, and checks if the
+Besides importing a workflow, the `importWF` function lists required R packages, and checks if the
 required command-line tools are installed and exported to a user's `PATH`. In the given example, the 
-command-line tools `trimmomatic`, `hisat2-build`, `hisat2`, and `samtools` are not found in the PATH.
-Prior to runing the workflow, they need to be installed. 
+command-line tools `trimmomatic`, `hisat2-build`, `hisat2`, and `samtools` are not found in the PATH 
+(here R package build system). Prior to running the workflow, the missing software tools need to be 
+installed in order to run the workflow successfully. 
 
 After the import with `importWF`, the individual workflow steps are stored in the `sal` object, and a 
-summary of the steps can be printed.
+summary of the steps can be printed by typing `sal`.
 ```{r eval=FALSE}
 sal
 ## Instance of 'SYSargsList': 
@@ -203,30 +207,31 @@ sal
 ##        ...
 ```
 
-At this stage all workflow steps are in pending state as expected. Next, one can run the workflow.
-
+At this stage all workflow steps are in a pending state since none of them have been executed yet. Next, one 
+can execute the entire workflow from start to finish. The `steps` argument of `runWF` can be used to execute only selected
+steps. For details consult the help file with `?runWF`.
 
 __(3)__ Run entire workflow.
 ```{r eval=FALSE}
-sal <- runWF(sal)  # To run selected workflow steps only, see help with ?runWF. 
+sal <- runWF(sal)  
 ```
 
-__(4)__  The status of workflow steps can be checked with the summary print function. If a workflow step 
-has completed, its status will change from `Pending` to `Success` or `Failed`.
+__(4)__  After completing all or only some steps, the status of a workflow steps can always be checked with the summary print function. 
+If a workflow step has completed, its status will change from `Pending` to `Success` or `Failed`.
 ```{r eval=FALSE}
 sal
 ```
 
 ![](https://systempipe.org/sp/spr/sp_run/runwf.png)
 
-__(5)__ Visualize the workflow in a toplogy graph along with run status summary.
+__(5)__ Visualize the workflow as a topology graph that also includes a run status information about each step.
 ```{r eval=FALSE}
 plotWF(sal)
 ```
 
-Examples of the workflow plot can be seen in the [visualize workflow section](#visualize-workflow) below.
+Examples of the workflow plot are available in the [visualize workflow section](#visualize-workflow) below.
 
-__(6)__ Generate scientific and technical reports
+__(6)__ Generate scientific and technical reports. 
 ```{r eval=FALSE}
 # Scietific report
 sal <- renderReport(sal)
