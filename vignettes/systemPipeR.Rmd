@@ -1,5 +1,5 @@
 ---
-title: "systemPipeR: Workflow Management and Report Generation Environment" 
+title: "systemPipeR: Workflow Environment for Data Analysis and Report Generation" 
 author: "Author: Le Zhang, Daniela Cassol, and Thomas Girke"
 date: "Last update: `r format(Sys.time(), '%d %B, %Y')`" 
 output:
@@ -55,7 +55,8 @@ suppressPackageStartupMessages({
 
 # Introduction
 
-[_`systemPipeR`_](http://www.bioconductor.org/packages/devel/bioc/html/systemPipeR.html) is a multipurpose data analysis workflow environment that unifies R with command-line (CL) software [@H_Backman2016-bt]. It enables scientists to analyze many types of data on personal or distributed computer systems with a high level of reproducibility, scalability and portability (Figure \@ref(fig:utilities)). At its core is a CL interface (CLI) that adopts the Common Workflow Language [CWL, @Crusoe2021-iq], and allows users to choose for each analysis step the optimal R or CL software. It supports both end-to-end and partial execution of workflows with built-in restart functionalities. A workflow control container class manages analysis tasks of variable complexity. Handling of large numbers of input samples and experimental designs is facilitated by standardized processing routines of metadata. As a multi-purpose workflow management toolkit, _`systemPipeR`_ enables users to run existing workflows, customize them or design entirely new ones while taking advantage of widely adopted data structures within the Bioconductor ecosystem. Another important core functionality is the generation of reproducible scientific analysis and technical reports. For result interpretation, _`systemPipeR`_ offers a wide range of graphics functionalities, while an associated Shiny App provides many useful functionalities for interactive result exploration. 
+[_`systemPipeR`_](http://www.bioconductor.org/packages/devel/bioc/html/systemPipeR.html) is a versatile workflow environment for data analysis that integrates R with command-line (CL) software [@H_Backman2016-bt]. This platform allows scientists to analyze diverse data types on personal or distributed computer systems. It ensures a high level of reproducibility, scalability, and portability (Figure \@ref(fig:utilities)). Central to `systemPipeR` is a CL interface (CLI) that adopts the Common Workflow Language [CWL, @Crusoe2021-iq]. Using this CLI, users can select the optimal R or CL software for each analysis step. The platform supports end-to-end and partial execution of workflows, with built-in restart capabilities. A workflow control container class manages analysis tasks of varying complexity. Standardized processing routines for metadata facilitate the handling of large numbers of input samples and complex experimental designs. As a multipurpose workflow management toolkit, `systemPipeR` enables users to run existing workflows, customize them, or create entirely new ones while leveraging widely adopted data structures within the Bioconductor ecosystem. Another key aspect of `systemPipeR` is its ability to generate reproducible scientific analysis and technical reports. For result interpretation, it offers a range of graphics functionalities. Additionally, an associated Shiny App provides various interactive features for result exploration, and enhancing the user experience.
+
 
 ```{r utilities, eval=TRUE, warning= FALSE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Important functionalities of systemPipeR. (A) Illustration of workflow design concepts, and (B) examples of visualization functionalities for NGS data.", warning=FALSE}
 knitr::include_graphics("images/utilities.png")
@@ -63,19 +64,19 @@ knitr::include_graphics("images/utilities.png")
 
 ## Workflow management container
 
-At the core of `systemPipeR` is a workflow management container called
-`SYSargsList` or short `SAL`. This S4 class stores all relevant information for
-running and monitoring workflows. This includes the connectivity among workflow
-steps, the paths to their input and output data along with relevant parameter
+A central component of `systemPipeR` is `SYSargsList` or short `SAL`, a container
+for workflow management. This S4 class stores all relevant information for
+running and monitoring workflows. It captures the connectivity between workflow
+steps, the paths to their input and output data, and pertinent parameter
 values used in each step (see Figure \@ref(fig:sysargslistImage)). `SAL`
 instances can be constructed from a specific metadata table, referred to as
-targets file, R code and/or CWL parameter files (details are below).
-When running preconfigured NGS workflows, the only data the user needs to
-provide are a targets file and the initial input data described in the targets file
-(_e.g._ FASTQ files). If needed the targets file can include additional metadata 
-describing the design of an experiment, including sample labels, replicate information, 
-and other details. Subsequent input/output data generated by the individual workflow steps 
-are tracked internally and can be returned as descendent targets instances. 
+targets file, R code and/or CWL parameter files (details provided below).
+For preconfigured NGS workflows, users need to provide only a targets file and 
+the initial input data specified in that file (such as FASTQ files). The targets 
+file can optionally include additional metadata describing the experimental design, 
+such as sample labels, replicate information, and other relevant details. As the 
+workflow progresses, subsequent input and output data generated by individual steps 
+are tracked internally and can be retrieved as descendent targets instances.
 
 ```{r sysargslistImage, warning= FALSE, eval=TRUE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Workflow management class. Workflows are defined and managed by the `SYSargsList` (`SAL`) control class. Components of `SAL` include `SYSargs2` and/or `LineWise` for defining CL- and R-based workflow steps, respectively. The former are constructed from a `targets` and two CWL *param* files, and the latter comprises mainly R code.", warning=FALSE}
 
@@ -88,7 +89,7 @@ _`systemPipeR`_ adopts the Common Workflow Language (CWL) [@Amstutz2016-ka], whi
 widely used community standard for describing CL tools and workflows
 in a declarative, generic, and reproducible manner. CWL specifications are
 text-based YAML (https://yaml.org/) files that are straightforward to create and 
-to modify. Adopting CWL in `systemPipeR` improves the sharability, standardization, 
+to modify. Integrating CWL in `systemPipeR` enhances the sharability, standardization, 
 extensibility and portability of data analysis workflows.
 
 Following the [CWL Specifications](https://www.commonwl.org/v1.2/CommandLineTool.html), the basic
@@ -118,7 +119,7 @@ latter case the same CWL workflow definition files are used but rendered and
 executed entirely with R functions defined by _`systemPipeR`_, and thus use CWL
 mainly as a command-line and workflow definition format rather than execution
 software to run workflows. --> The package also provides several convenience
-functions that are useful for designing and debugging workflows, such as a
+functions that are useful for designing and testing workflows, such as a
 command-line rendering function that assembles from the parameter files (cwl, yml and 
 targets) the exact command-line strings for each step prior to running a command-line tool. 
 Auto-generation of CWL parameter files is also supported. Here, users can simply 
@@ -133,7 +134,7 @@ knitr::include_graphics("images/general.png")
 ```
 -->
 
-# Getting Started
+# Getting started
 
 ## Installation
 
@@ -150,11 +151,11 @@ BiocManager::install("systemPipeR")
 BiocManager::install("systemPipeRdata")
 ```
 
-For a workflow to run successfully, all CL tools used by a workflow need to be installed and executable on a user's system (details [here](#third-party-software-tools)). 
+For a workflow to run successfully, all CL tools used by a workflow need to be installed and executable on the user's system, where the analysis will be performed (details provided [below](#third-party-software-tools)). 
 
 ## Five minute quick-start
 
-The following demonstrates how to initialize, run and monitor workflows and create reports. 
+The following demonstrates how to initialize, run and monitor workflows, and subsequently create analysis reports. 
 
 
 _(1) Create workflow environment._ The chosen example uses the `genWorenvir` function from
@@ -173,8 +174,8 @@ function, a project directory with the default name `.SPRproject` is created
 within the workflow directory. Progress information and log files of a workflow
 run will be stored in this directory. After this, workflow steps can be loaded
 into `sal` one-by-one, or all at once with the `importWF` function. The latter
-reads all steps of a workflow from an Rmd file (here `systemPipeRNAseq.Rmd`)
-that defines the steps. 
+reads all steps of a from a workflow Rmd file (here `systemPipeRNAseq.Rmd`)
+defining the analysis steps. 
 
 ```{r eval=FALSE}
 library(systemPipeR) 
@@ -189,8 +190,9 @@ sal <- importWF(sal, file_path = "systemPipeRNAseq.Rmd") # import into sal the W
 The `importWF` function also checks the availability of required CL software.
 All dependency CL software needs to be installed and exported to a user's
 `PATH`. In the given example, the CL tools `trimmomatic`, `hisat2-build`,
-`hisat2`, and `samtools` are not available. This is expected for the package 
-build system where this user tutorial (vignette) was rendered. 
+`hisat2`, and `samtools` are not available. This is expected here since 
+this vignette was rendered on Bioconductor's package build system where 
+custom command-line software is not necessarily installed. 
 
 _(3) Status summary._ An overview of the workflow steps and their status
 information can be printed by typing `sal`. For space reasons, the following
@@ -220,8 +222,8 @@ information will be provided for each workflow step.
 sal <- runWF(sal)  
 ```
 
-After completing all or only some steps, the status of a workflow steps can
-always be checked with the summary print function. If a workflow step has
+After completing all or only some steps, the status of workflow steps can
+always be checked with the summary print function. If a workflow step was
 completed, its status will change from `Pending` to `Success` or `Failed`.
 
 ```{r eval=FALSE}
@@ -232,7 +234,7 @@ sal
 
 _(5) Workflow topology graph._ Workflows can be displayed as topology graphs
 using the `plotWF` function (not evaluated here). The run status information
-about each step and various other details are embedded in these graphs.
+for each step and various other details are embedded in these graphs.
 Examples of the workflow plot are available in the [visualize workflow
 section](#visualize-workflow) below.
 
@@ -253,25 +255,24 @@ sal <- renderLogs(sal)
 
 # Project structure
 
-The root directory of `systemPipeR` projects contains by default the three
-sub-directories `data`, `results` and `param` (see Figure \@ref(fig:dir)). The
-log directory with the default name `SPRproject` is a fourth sub-directory that
-is created by the `SPRproject` function when initializing a workflow run (see
-above). Workflow project instances generated with
-`systemPipeRdata::genWorkenvir` (see above) follow the same directory
-structure. Users can change this structure as needed, but will need to adjust
-in some cases the code in their workflows. Just adding directories to the
-default directory structure will rarely require changes in the workflows. The
-following directory tree describes the expected content in each directory,
-where directory names are indicated in <span
-style="color:grey">***green***</span>.
+The root directory of `systemPipeR` projects contains by default the following
+three sub-directories: `data`, `results` and `param` (see Figure
+\@ref(fig:dir)). Workflow project instances generated with
+`systemPipeRdata::genWorkenvir` (see quick-start above) follow the same
+directory structure. The log directory, with default name `.SPRproject`, is a
+fourth sub-directory on the same level. This hidden directory is created when
+initializing a workflow run with the `SPRproject` function. Users can change
+the recommended directory structure, but will need to adjust in some cases the code in
+their workflows. Just adding directories is possible without requiring changes 
+to the workflows. The following directory tree describes the expected content in 
+each directory, where the directory names are indicated in 
+<span style="color:green">***green***</span>.
 
-* <span style="color:green">_**workflow/**_</span> (*e.g.* *myproject/*) 
-    + This is the root directory of the workflow project.
-    + Workflow run script (*Rmd*) and metadata (*targets.txt*) files are located here. 
-    * Configuration files for computer clusters are located here, such as `.batchtools.conf.R` and `tmpl` files for `batchtools`. 
-    + Note, this directory can have any name (*e.g.* <span style="color:green">_**myproject**_</span>). Changing its name does not require any modifications in the run script(s).
-  + **Important subdirectories**: 
+* <span style="color:green">_**workflow/**_</span> 
+    + This is the root directory of a workflow. It can have any name and includes the following files: 
+        + Workflow *Rmd* and metadata targets file(s) 
+        * Optionally, configuration files for computer clusters, such as `.batchtools.conf.R` and `tmpl` files for `batchtools`. 
+  + Important default subdirectories: 
     + <span style="color:green">_**param/**_</span> 
         + CWL parameter files are organized by CL tools (under <span style="color:green">_**cwl/**_</span>), each with its own subdirectory that contains the corresponding `cwl` and `yml` files. Previous versions of parameter files are stored in a separate subdirectory. 
     + <span style="color:green">_**data/**_ </span>
@@ -281,10 +282,15 @@ style="color:grey">***green***</span>.
     + <span style="color:green">_**results/**_</span>
         + Analysis results are written to this directory. Examples include tables, plots, or NGS results such as alignment (BAM), variant (VCF), peak (BED) files.
         + Any number of subdirectories can be created to organize analysis results under this directory.
+    + <span style="color:green">_**.SPRproject/**_</span>
+        + Hidden log directory (name starts with a dot) created by `SPRproject` function at the beginning of a workflow run.
+        + Run status information and log files of a workflow run are stored here. 
 
+<!--
 ```{r dir, eval=TRUE, echo=FALSE, warning= FALSE, out.width="100%", fig.align = "center", fig.cap= "Directory structure of workflows.", warning=FALSE}
 knitr::include_graphics("images/spr_project.png")  
 ```
+-->
 
 ## Structure of initial _`targets`_ file
 
