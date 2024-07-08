@@ -6,7 +6,7 @@ output:
   BiocStyle::html_document:
     toc_float: true
     code_folding: show
-    toc_depth: 3
+    toc_depth: 4
 package: systemPipeR
 vignette: |
   %\VignetteEncoding{UTF-8}
@@ -71,11 +71,12 @@ information for running and monitoring each analysis step in workflows. It
 captures the connectivity between workflow steps, the paths to their input and 
 output data, and pertinent parameter values used in each step 
 (see Figure \@ref(fig:sysargslistImage)). Typically, `SAL` instances are constructed 
-from an intial metadata table (targets file), R code and CWL parameter files for each 
-R- and CL-based analysis step in analysis workflows (details provided below). For preconfigured workflows, users need to provide only a targets file and the initial input data specified in that file (such as FASTQ files). The
-targets file provides information about the input data and additional metadata
-describing the experimental design, such as sample labels, replicate
-information, and other relevant details. 
+from an intial metadata targets table, R code and CWL parameter files for each 
+R- and CL-based analysis step in workflows (details provided below). 
+For preconfigured workflows, users only need to provide their input data (such as FASTQ 
+files) and the corresponding metadata in a targets file. The latter describes the 
+experimental design, defines sample labels, replicate information, and other 
+relevant information. 
 
 ```{r sysargslistImage, warning= FALSE, eval=TRUE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Workflow management class. Workflows are defined and managed by the `SYSargsList` (`SAL`) control class. Components of `SAL` include `SYSargs2` and/or `LineWise` for defining CL- and R-based workflow steps, respectively. The former are constructed from a `targets` and two CWL *param* files, and the latter comprises mainly R code.", warning=FALSE}
 
@@ -152,7 +153,7 @@ BiocManager::install("systemPipeR")
 BiocManager::install("systemPipeRdata")
 ```
 
-For a workflow to run successfully, all CL tools used by a workflow need to be installed and executable on the user's system, where the analysis will be performed (details provided [below](#third-party-software-tools)). 
+For a workflow to run successfully, all CL tools used by a workflow need to be installed and executable on a user's system, where the analysis will be performed (details provided [below](#third-party-software-tools)). 
 
 ## Five minute tutorial
 
@@ -384,7 +385,7 @@ showDF(read.delim(targetspath, comment.char = "#"))
 ### Sample comparisons
 
 If needed, sample comparisons of comparative experiments, such as differentially expressed genes (DEGs), can be 
-specified in the header lines, starting with the tag '``# <CMP>``', of a `targets` file. 
+specified in the header lines of a `targets` file that start with a `# <CMP>` tag. 
 Their usage is optional, but useful for controlling comparative analyses according 
 to certain biological expectations, such as identifying DEGs in RNA-Seq experiments based on 
 simple pair-wise comparisons.
@@ -557,7 +558,7 @@ log directory that acts as a flat-file database of a workflow. A YAML file is au
 included in the project directory that specifies the basic location of the workflow project. 
 Every time the `SAL` container is updated in R with a new workflow step or a modification 
 to an existing step, the changes are automatically recorded in the flat-file database. This
-is important for tracking the run status of workflows and supporting restart functionality for 
+is important for tracking the run status of workflows and providing restart functionality for 
 workflows. 
 
 ```{r SPRproject1a, eval=FALSE}
@@ -572,7 +573,7 @@ and testing workflows, but should be avoided in production runs of workflows.
 sal <- SPRproject(projPath = getwd(), overwrite = TRUE) 
 ```
 
-The function checks whether the expected workflow directories [here](#wf-directories) are present,
+The function checks whether the expected workflow directories (see [here](#wf-directories)) exist,
 and will create them if any of them is missing. If needed users can change the default names of 
 these directories as shown.
 
@@ -594,7 +595,7 @@ workflow steps will not overwrite objects with the same names in the current env
 sal <- SPRproject(envir = new.env()) 
 ```
 
-At this stage, `sal` is an empty `SYSargsList` (`SAL`) container that only contains
+At this stage, `sal` is an empty `SAL` (`SYSargsList`) container that only contains
 the basic information about the project's directory structure that can be accessed with 
 `projectInfo`.
 
@@ -612,14 +613,29 @@ length(sal)
 
 ## Constructing workflows
 
-Workflows in `systemPipeR` can be constructed stepwise in [interactive mode](#appendstep), or by importing all steps with a [single command](#importWF) from an R Markdown workflow file. This tutorial section introduces both options. In both cases, workflows are constructed by connecting data analysis steps with the `appendStep` method that can contain R code or CL calls.
+Workflows in `systemPipeR` can be constructed stepwise in [interactive
+mode](#appendstep) by evaluating the code of individual workflow steps in the R
+console one-by-one. Alternatively, one can import all steps of a workflow with
+a [single import command](#importWF) at once, either from an R script or an R
+Markdown workflow file. For the purpose of explaining the details about
+constructing and connecting different types of workflow steps, this tutorial
+section introduces first the interactive approach. After this the automated
+import of entire workflows with many steps is explained where the individual
+steps are defined the same way. In all cases, workflow steps are loaded to a
+`SAL` workflow container with the proper connectivity information using using
+`systemPipeR's` `appendStep` method where steps can be comprised of R code or
+CL calls.
 
-## Stepwise construction  {#appendstep}
+### Stepwise construction  {#appendstep}
 
-The following demonstrates how to design, load and run workflows using a simple data processing routine as an example. This mini workflow will export a test dataset to multiple files, compress/decompress them, import them back into R, and then perform a simple statistical analysis. 
+The following demonstrates how to design, load and run workflows using a simple
+data processing routine as an example. This mini workflow will export a test
+dataset to multiple files, compress/decompress the exported files, import them back 
+into R, and then perform a simple statistical analysis and plot the results. 
 
-The `sal` object of the new workflow project (directory named`.SPRproject`) was intialized in the previous section.
-At this point this `sal` instance contains no data analysis steps since none have been loaded so far.
+The `sal` object of the new workflow project (directory named`.SPRproject`) was
+intialized in the previous section. At this point this `sal` instance contains
+no data analysis steps since none have been loaded so far.
 
 ```{r sal_check, eval=TRUE}
 sal
@@ -627,11 +643,22 @@ sal
 
 Next, workflow steps will be added to `sal`.
 
-### Adding the first step 
+#### Step 1: R step 
 
-The first workflow step comprises R code that needs to be declared with the `LineWise` function, and loaded into `sal` with`appendStep`. The R code of an analysis step needs to be assigned to the `code` argument. In this assignment the R code has to be enclosed by braces (`{...}`) and separted from them by new lines. Additionally, the workflow step needs to be named under the `step_name` argument. Step names are required to be unique throughout workflows. During the construction of workflow steps, the included R code will not be executed. The execution of workflow steps is explained in as separate section [here](#wf-execution).
+The first step in the chosen example workflow comprises R code that will be
+stored in a `LineWise` object. It is constructed with the `LineWise` function,
+and then appended to `sal` with the  `appendStep<-` method. The R code of an
+analysis step is assigned to the `code` argument of the `LineWise` function. In this
+assignment the R code has to be enclosed by braces (`{...}`) and separted from
+them by new lines. Additionally, the workflow step should be given a descriptive name
+under the `step_name` argument. Step names are required to be unique throughout
+workflows. During the construction of workflow steps, the included R code will
+not be executed. The execution of workflow steps is explained in a separate
+section [below](#wf-execution).
 
-In the code example used here, the `iris` dataset will be split by the species names under the `Species` column, and then the resulting `data.frames` are exported to tabular files. 
+In the given code example, the `iris` dataset is split by the species
+names under the `Species` column, and then the resulting `data.frames` are
+exported to three tabular files. 
 
 
 ```{r, firstStep_R, eval=TRUE}
@@ -650,51 +677,40 @@ After adding the R code, `sal` contains now one workflow step.
 sal
 ```
 
-To extract the code of an R step, the `codeLine` method can be used
+To extract the code of an R step stored in a `SAL` object, the `codeLine` method can be used.
 
 ```{r codeLine, eval=TRUE}
 codeLine(sal)
 ```
 
-### Adding more steps
+#### Step 2: CL step
 
-Next, an example of how to compress the exported files using 
-[`gzip`](https://www.gnu.org/software/gzip/) command-line. 
+CL steps are stored as `SYSargs2` objects that are constructed with the
+`SYSargsList` function, and then appended to `sal` with the `appendStep<-`
+method. As outlined in the introduction (see [here](#cl-interface)), CL steps
+are defined by two CWL parameter files (`yml` configuration and `cwl` step
+definition files) and an optional `targets` file. How parameter values in the
+`targets` file are passed on to the corresponding entries in the `yml` file, is
+defined by a `named vector` that is assigned to the `inputvars` argument of the
+`SYSargsList` function. A parameter connection is established if a name assigned to
+`inputvars` has matching column and element names in the `targets` and `yml` files, 
+respectively (Fig \@ref(fig:sprandCWL)). More details about parameter passing and CWL 
+syntax are provied below (see [here](#cwl_targets) and [here](#cwl)). 
 
-The constructor function creates an `SYSargsList` S4 class object using data from
-three input files:
+The most important other arguments of the `SYSargsList` function are listed below. For more 
+information, users want to consult the function's help with `?SYSargsList`.
 
-    - CWL command-line specification file (`wf_file` argument);
-    - Input variables (`input_file` argument);
-    - Targets file (`targets` argument).
+  - `step_name`: a unique *name* for the step. If no name is provided, a default 
+    `step_x` name will be assigned, where `x` is the step index.
+  - `dir`: if `TRUE` (default) all output files generated by a workflow step will be written to a 
+    subdirectory with the same name as `step_name`. This is useful for organizing result files. 
+  - `dependency`: assign here the name of the step the current step depends on. This is mandatory 
+    for all steps in a workflow, except the first one. The dependency tree of a workflow is 
+    based on the dependency connections among steps.
 
-In CWL, files with the extension `.cwl` define the parameters of a chosen
-command-line step or workflow, while files with the extension `.yml` define the
-input variables of command-line steps. 
-
-The `targets` file is optional for workflow steps lacking `input` files. The connection 
-between `input` variables and the `targets` file is defined under the `inputvars` 
-argument. It is required a `named vector`, where each element name needs to match
-with column names in the `targets` file, and the value must match the names of 
-the `input` variables defined in the `*.yml` files (see Figure \@ref(fig:sprandCWL)). 
-
-A detailed description of the dynamic between `input` variables and `targets` 
-files can be found [here](#cwl_targets). 
-In addition, the CWL syntax overview can be found [here](#cwl). 
-
-Besides all the data form `targets`, `wf_file`, `input_file` and `dir_path` arguments,
-`SYSargsList` constructor function options include: 
-
-  - `step_name`: a unique *name* for the step. This is not mandatory; however, 
-    it is highly recommended. If no name is provided, a default `step_x`, where
-    `x` reflects the step index, will be added. 
-  - `dir`: this option allows creating an exclusive subdirectory for the step 
-    in the workflow. All the outfiles and log files for this particular step will 
-    be generated in the respective folders.
-  - `dependency`: after the first step, all the additional steps appended to 
-    the workflow require the information of the dependency tree. 
-
-The `appendStep<-` method is used to append a new step in the workflow.
+In the specific example code given below, a CL step is added to the workflow where the
+[`gzip`](https://www.gnu.org/software/gzip/) software is used to compress the
+files that were generated in the previous step. 
 
 ```{r gzip_secondStep, eval=TRUE}
 targetspath <- system.file("extdata/cwl/gunzip", "targets_gunzip.txt", package = "systemPipeR")
@@ -706,54 +722,46 @@ appendStep(sal) <- SYSargsList(step_name = "gzip",
                       dependency = "export_iris")
 ```
 
-Note: This will not work if the `gzip` is not available on your system 
-(installed and exported to PATH) and may only work on Windows systems using PowerShell. 
-
-For a overview of the workflow, we can check the object as follows:
+After adding the above CL step, `sal` contains now two steps. 
 
 ```{r}
 sal
 ```
 
-Note that we have two steps, and it is expected three files from the second step.
-Also, the workflow status is *Pending*, which means the workflow object is 
-rendered in R; however, we did not execute the workflow yet. 
-In addition to this summary, it can be observed this step has three command lines. 
-
-For more details about the command-line rendered for each target file, it can be 
-checked as follows: 
+The individual CL calls, that will be executed by the `gzip` step, can be rendered and viewed 
+with the `cmdlist` function. Under the `targets` argument one can subset the CL calls to 
+specific samples by assigning the corresponding names or index numbers.
 
 ```{r}
 cmdlist(sal, step = "gzip")
+# cmdlist(sal, step = "gzip", targets=c("SE"))
 ```
 
-#### Using the `outfiles` for the next step
+#### Step 3: CL with input from previous step
 
-For building this step, all the previous procedures are being used to append the 
-next step. However, here, we can observe power features that build the 
-connectivity between steps in the workflow.
-
-In this example, we would like to use the outfiles from *gzip* Step, as
-input from the next step, which is the *gunzip*. In this case, let's look at the 
-outfiles from the first step:
+In many use cases the output files, generated by an upstream workflow step, serve as input 
+to a downstream step. To establish these input/output connections, the names (paths) of the 
+output files generated by each step needs to be accessible. This information
+can be extracted from `SAL` objects with the `outfiles` accessor method as shown below. 
 
 ```{r}
-outfiles(sal)
+# outfiles(sal) # output files of all steps in sal
+outfiles(sal)['gzip'] # output files of 'gzip' step
+# colnames(outfiles(sal)$gzip) # returns column name passed on to `inputvars`
 ```
 
-The column we want to use is "gzip_file". For the argument `targets` in the 
-`SYSargsList` function, it should provide the name of the correspondent step in
-the Workflow and which `outfiles` you would like to be incorporated in the next 
-step. 
-The argument `inputvars` allows the connectivity between `outfiles` and the 
-new `targets` file. Here, the name of the previous `outfiles` should be provided 
-it. Please note that all `outfiles` column names must be unique.
+Note, the names of this and other important accessor methods for 'SAL' objects
+can be looked up conveniently with `names(sal)` (for more details see [here](#accessor-methods)). 
 
-It is possible to keep all the original columns from the `targets` files or remove
-some columns for a clean `targets` file.
-The argument `rm_targets_col` provides this flexibility, where it is possible to
-specify the names of the columns that should be removed. If no names are passing
-here, the new columns will be appended. 
+In the chosen workflow example, the output files (here compressed `gz` files), that
+were generated by the previous `gzip` step, will be uncompressed in the current step with the
+`gunzip` software. The corresponding input files for the `gunzip` step are listed under the 
+`gzip_file` column above. For defining the `gunzip` step, the values 'gzip' and 'gzip_file' 
+will be used under the `targets` and `inputvars` arguments of the `SYSargsList` function, 
+respectively. The argument `rm_targets_col` allows to drop columns in the `targets` 
+instance of the new step. The remaining parameters settings are similar to those in the 
+previous step. 
+
 
 ```{r gunzip, eval=TRUE}
 appendStep(sal) <- SYSargsList(step_name = "gunzip", 
@@ -765,52 +773,55 @@ appendStep(sal) <- SYSargsList(step_name = "gunzip",
                       dependency = "gzip")
 ```
 
-We can check the targets automatically create for this step, 
-based on the previous `outfiles`:
-
-```{r targetsWF_3, eval=TRUE}
-targetsWF(sal[3])
-```
-
-We can also check all the expected `outfiles` for this particular step, as follows:
-
-```{r outfiles_2, eval=TRUE}
-outfiles(sal[3])
-```
-
-Now, we can observe that the third step has been added and contains one substep.
+After adding the above new step, `sal` contains now a third step. 
 
 ```{r}
 sal
 ```
 
-In addition, we can access all the command lines for each one of the substeps. 
+The `targets` instance of the new step can be returned with the `targetsWF` method
+where the output files from the previous step are listed under the first column (input).
 
-```{r, eval=TRUE}
-cmdlist(sal["gzip"], targets = 1)
+```{r targetsWF_3, eval=TRUE}
+targetsWF(sal['gunzip'])
 ```
 
-#### Getting data from a workflow instance 
+As before, the output files of the new step can be returned with `outfiles`. 
 
-The final step in this simple workflow is an R code step. For that, we are using
-the `LineWise` constructor function as demonstrated above. 
+```{r outfiles_2, eval=TRUE}
+outfiles(sal['gunzip'])
+```
 
-One interesting feature showed here is the `getColumn` method that allows 
-extracting the information for a workflow instance. Those files can be used in
-an R code, as demonstrated below. 
+Finally, the corresponding CL calls of the new step can be returned with the `cmdlist` 
+function (here for first entry).
+
+```{r, eval=TRUE}
+cmdlist(sal["gunzip"], targets = 1)
+```
+
+#### Step 4: R with input from previous step 
+
+The final step in this sample workflow is an R step that uses the files from a previous
+step as input. In this case the `getColumn` method is used to obtain the paths to the files
+generated in a previous step, which is in the given example the 'gunzip' step.. 
 
 ```{r getColumn, eval=TRUE}
 getColumn(sal, step = "gunzip", 'outfiles')
 ```
+
+In this R step, the tabular files generated in the previous `gunzip` CL step
+are imported into R and row appended to a single `data.frame`. Next the
+column-wise mean values are calculated for the first four columns.
+Subsequently, the results are plotted as bar diagram with error bars. 
 
 ```{r, iris_stats, eval=TRUE}
 appendStep(sal) <- LineWise(code = {
                     df <- lapply(getColumn(sal, step = "gunzip", 'outfiles'), function(x) read.delim(x, sep = ",")[-1])
                     df <- do.call(rbind, df)
                     stats <- data.frame(cbind(mean = apply(df[,1:4], 2, mean), sd = apply(df[,1:4], 2, sd)))
-                    stats$species <- rownames(stats)
+                    stats$size <- rownames(stats)
                     
-                    plot <- ggplot2::ggplot(stats, ggplot2::aes(x = species, y = mean, fill = species)) + 
+                    plot <- ggplot2::ggplot(stats, ggplot2::aes(x = size, y = mean, fill = size)) + 
                       ggplot2::geom_bar(stat = "identity", color = "black", position = ggplot2::position_dodge()) +
                       ggplot2::geom_errorbar(ggplot2::aes(ymin = mean-sd, ymax = mean+sd), width = .2, position = ggplot2::position_dodge(.9)) 
                     },
@@ -818,15 +829,46 @@ appendStep(sal) <- LineWise(code = {
                     dependency = "gzip")
 ```
 
-## Build workflow from a {R Markdown} {#importWF}
+This is the final step of this demonstration resulting in a `sal` workflow container with
+a total of four steps. 
 
-The precisely same workflow can be created by importing the steps from an 
-R Markdown file.
-As demonstrated above, it is required to initialize the project with `SPRproject` function. 
+```{r}
+sal
+```
 
-`importWF` function will scan and import all the R chunk from the R Markdown file 
-and build all the workflow instances. Then, each R chuck in the file will be 
-converted in a workflow step. 
+### Load workflow from R or Rmd scripts{#importWF}
+
+The above process of loading workflow steps one-by-one into a `SAL` workflow
+container can be easily automated by storing the step definitions in an R or
+Rmd script, and then importing them from there into an R session. 
+
+__1. Loading workflows from an R script.__ For importing workflow steps from an
+R script, the code of the workflow steps needs to be stored in an R script
+from where it can be imported with R's `source` command. Applied to
+the above workflow example (see [here](appendstep)), this means nothing else 
+than saving the code of the four workflow steps to an R script where each step is declared 
+with the standard CL or R step syntax: `appendStep(sal) <- SYSargsList/LineWise(...)`. 
+At the beginning of the R script one has to load the `systemPipeR` library, and 
+initialize a new workflow project and associated `SAL` container with `SPRproject()`. 
+After sourcing the R script from R, the fully populated `SAL` container will be 
+loaded into that session, and the workflow is ready to be executed (see below).
+
+__2. Loading workflows from an R Markdown file.__ As an alternative to plain R
+scripts, R Markdown (Rmd) scripts provide a more adaptable solution for
+defining workflows. An Rmd file can be converted into various publication-ready
+formats, such as HTML or PDF. These formats can incorporate not only the
+analysis code but also the results the code generates, including tables and figures.
+This approach enables the creation of reproducible analysis reports for
+workflows. This reporting feature is crucial for reproducibility,
+documentation, and visual interpretation of the analysis results. The following illustrates this
+approach for the same four workflow steps used in the previous section [here](#appendstep), 
+that is included in an Rmd file of the `systemPipeR` package. Note, the path to this Rmd file
+is retrieved with R's `system.file` function. 
+
+Prior to importing the workflow from an Rmd file, it is required to initialize for it a new 
+workflow project with the `SPRproject` function. Next, the `importWF` function is used to scan 
+the Rmd file for code chunks that define workflow steps, and subsequently import them in to the 
+`SAL` workflow container of the project. 
 
 ```{r importWF_rmd, eval=TRUE}
 sal_rmd <- SPRproject(logs.dir = ".SPRproject_rmd") 
@@ -835,32 +877,52 @@ sal_rmd <- importWF(sal_rmd,
                 file_path = system.file("extdata", "spr_simple_wf.Rmd", package = "systemPipeR"))
 ```
 
-Let's explore the workflow to check the steps:
+After the import, the new `sal_rmd` workflow container, that is fully populated with all four workflow 
+steps from [before](#appendstep), can be inspected with several accessor functions (not 
+evaluated here).
 
-```{r importWF_details}
+```{r importWF_details, eval=FALSE}
+sal_rmd
 stepsWF(sal_rmd)
 dependency(sal_rmd)
+cmdlist(sal_rmd)
 codeLine(sal_rmd)
 targetsWF(sal_rmd)
+statusWF(sal_rmd)
 ```
 
-### Rules to create the R Markdown to import as workflow
+#### Define workflow steps in R Markdowns
 
-To include a particular code chunk from the R Markdown file in the workflow
-analysis, please use the following code chunk options:
+In standard R Markdown (Rmd) files, code chunks are enclosed by new lines
+starting with three backticks. The backtick line at the start of a code chunk
+is followed by braces that can contain arguments controlling the code chunk's
+behavior. To formally declare a workflow step in an R Markdown file's argument
+line, `systemPipeR` introduces a special argument named `spr`. When
+using `importWF` to scan an R Markdown file, only code chunks with `spr=TRUE` in
+their argument line will be recognized as workflow steps and loaded into the
+provided `SAL` workflow container. This design allows for the inclusion of
+standard code chunks not part of a workflow and renders them as usual. Here are
+two examples of argument settings that will both result in the inclusion of the
+corresponding code chunk as a workflow step since `spr` is set to `TRUE` in both
+cases. Notably, in one case, the standard R Markdown argument `eval` is assigned
+`FALSE`, preventing the `rmarkdown::render` function from evaluating the
+corresponding code chunk.
 
-    - `spr=TRUE'`: for code chunks with step workflow. 
+Examples: workflow code chunks are declared by `spr` flag in their argument line:
 
-For example: 
++ *```{r step_1, eval=TRUE, spr=TRUE}*
++ *```{r step_2, eval=FALSE, spr=TRUE}*
 
-> *```{r step_1, eval=TRUE, spr=TRUE}*
 
-> *```{r step_2, eval=FALSE, spr=TRUE}*
+In addition to including `spr = TRUE`, the actual code of workflow steps has additional 
+requirements. First, the last assignment in a code chunk of a workflow step needs to be an 
+`appendStep` of `SAL` using `SYSargsList` or `LineWise` for CL or R code, respectively. This 
+requirement is met if there are no other assignments outside of `appnedStep`. Second,
+R workflow steps need to be largely self contained by generating and/or loading the dependencies 
+required to execute the code. Third, in most cases the name of a `SAL` container should remain 
+the same throughout a workflow. This avoids errors such as: _'Error: <objectName> object not found'_.
 
-`importWF` function can ignore `eval` option in code chunk, and in this case, 
-both of the examples steps above would be incorporated in the workflow. 
-
-For `spr = TRUE`, the last object assigned must to be the `SYSargsList`, for example:
+Example of last assignment in a CL step.
 
 ```{r fromFile_example_rules_cmd, eval=FALSE}
 targetspath <- system.file("extdata/cwl/example/targets_example.txt", package = "systemPipeR")
@@ -871,7 +933,7 @@ appendStep(sal) <- SYSargsList(step_name = "Example",
                       inputvars = c(Message = "_STRING_", SampleName = "_SAMPLE_"))
 ```
 
-OR 
+Example of last assignment in an R step.
 
 ```{r fromFile_example_rules_r, eval=FALSE}
 appendStep(sal) <- LineWise(code = {
@@ -880,162 +942,219 @@ appendStep(sal) <- LineWise(code = {
                             step_name = "load_lib")
 ```
 
-Also, note that all the required files or objects to generate one particular step 
-must be defined in an imported R code. 
-The motivation for this is that when R Markdown files are imported, the `spr = TRUE` 
-flag will be evaluated, append, and stored in the workflow control class as 
-the `SYSargsList` object. 
+# Running workflows {#wf-execution}
 
-The workflow object name used in the R Markdown (e.g. `appendStep(sal)`) needs to 
-be the same when the `importWF` function is used. It is important to keep consistency. 
-If different object names are used, when running the workflow, you can see a error, 
-like *Error: <objectName> object not found.*.
+## Overview
 
-# Running the workflow {#wf-execution}
-
-For running the workflow, `runWF` function will execute all the command lines 
-store in the workflow container.
+In `systemPipeR`, the `runWF` function serves as the primary tool for executing
+workflows. It is responsible for running the code specified in the steps of a
+populated `SAL` workflow container. The following `runWF` command  will run the 
+test workflow from above from start to finish. This test workflow was first assembled step-by-step, 
+allowing for a thorough examination of its behavior. Subsequently, the same workflow 
+was imported from an Rmd file to demonstrate how to auto-load all steps of a workflow 
+at once into a `SAL` container. Please refer to the provided link [here](#appendstep) 
+for more information about this process.
 
 ```{r runWF, eval=is_win}
 sal <- runWF(sal)
 ```
 
-This essential function allows the user to choose one or multiple steps to be 
-executed using the `steps` argument. However, it is necessary to follow the 
-workflow dependency graph. If a selected step depends on a previous step(s) that
-was not executed, the execution will fail. 
+The `runWF` function allows to choose one or multiple steps to be 
+executed via its `steps` argument. When using partial workflow executions, it is important 
+to pay attention to the requirements of the dependency graph of a workflow. If a selected step 
+depends on one or more previous steps, that have not been executed and completed yet, 
+then the execution of the chosen step(s) will not be possible. 
 
 ```{r runWF_error, eval=FALSE}
 sal <- runWF(sal, steps = c(1,3))
 ```
 
-Also, it allows forcing the execution of the steps, even if the status of the 
-step is `'Success'` and all the expected `outfiles` exists. 
-Another feature of the `runWF` function is ignoring all the warnings 
-and errors and running the workflow by the arguments `warning.stop` and 
-`error.stop`, respectively.
+Importantly, by default, already completed workflow steps with a status of '`Success`' (for
+example, all output files exist) will not be repeated unnecessarily unless one explicitly sets
+the force parameter to TRUE. Skipping such steps can save time, particularly
+when optimizing workflows or adding new samples to previously completed runs.
+Additionally, one may find it useful in certain situations to ignore warnings or 
+errors without terminating workflow runs. This behavior can be enabled by setting
+`warning.stop=TRUE` and/or `error.stop=TRUE`.
+
 
 ```{r runWF_force, eval=FALSE}
 sal <- runWF(sal, force = TRUE, warning.stop = FALSE, error.stop = TRUE)
 ```
 
-When the project was initialized by `SPRproject` function, it was created an 
-environment for all objects created during the workflow execution. This 
-environment can be accessed as follows:
+When starting a new workflow project with the `SPRproject` function, a new R environment
+will be initialized that stores the objects generated by the workflow steps. The content
+of this R environment can be inspected with the `viewEnvir` function.
 
 ```{r runWF_env, eval=FALSE}
 viewEnvir(sal)
 ```
 
-The workflow execution allows to save this environment for future recovery:
+The `runWF` function saves the new R environment to an `rds` file under `.SPRproject` when `saveEnv=TRUE`, which 
+is done by default. For additional details, users want to consult the corresponding help document 
+with `?runWF`. 
 
 ```{r runWF_saveenv, eval=FALSE}
 sal <- runWF(sal, saveEnv = TRUE)
 ```
 
-## Workflow status
+A status summary of the executed workflows can be returned by typing `sal`.  
 
-To check the summary of the workflow, we can use:
-
-```{r show_statusWF, eval=TRUE}
+```{r show_statusWF_details1, eval=TRUE}
 sal
 ```
 
-To access more details about the workflow instances, we can use the `statusWF` method:
+Several accessor functions can be used to retrieve additional information about
+workflows and their run status. The code box below lists these functions,
+omitting their output for brevity. Although some of these functions have been
+introduced above already, they are included here again for easy reference.
 
-```{r statusWF, eval=TRUE}
+```{r show_statusWF_details2, eval=FALSE}
+stepsWF(sal)
+dependency(sal)
+cmdlist(sal)
+codeLine(sal)
+targetsWF(sal)
 statusWF(sal)
+projectInfo(sal)
 ```
 
-## Parallelization on clusters
+## Parallel evaluation
 
-This section of the tutorial provides an introduction to the usage of the 
-_`systemPipeR`_ features on a cluster.
+The processing time of computationally expensive steps can be greatly accelerated by
+processing many input files in parallel using several CPUs and/or computer nodes 
+of an HPC or cloud system, where a scheduling system is used for load balancing. 
+To simplify for users the configuration and execution of workflow steps in serial or parallel mode, 
+`systemPipeR` uses for both the same `runWF` function. Parallelization simply 
+requires appending of the parallelization parameters to the settings of the corresponding workflow
+steps each requesting the computing resources specified by the user, such as
+the number of CPU cores, RAM and run time. These resource settings are
+stored in the corresponding workflow step of the `SAL` workflow container.
+After adding the parallelization parameters, `runWF` will execute the chosen steps 
+in parallel mode as instructed. 
 
-Alternatively, the computation can be greatly accelerated by processing many files 
-in parallel using several compute nodes of a cluster, where a scheduling/queuing
-system is used for load balancing. 
+The following example applies to an alignment step of an RNA-Seq workflow. The
+above demonstration workflow is not used here since is too simple to benefit
+from parallel processing. In the chosen alignment example, the parallelization
+parameters are added to the alignment step (here `hisat2_mapping`) of `SAL` via
+a `resources` list. The given parameter settings will run 18 processes (`Njobs`) in
+parallel using for each 4 CPU cores (`ncpus`), thus utilizing a total of 72 CPU
+cores. The `runWF` function can be used with most queueing systems as it is based on
+utilities defined by the `batchtools` package, which supports the use of
+template files (_`*.tmpl`_) for defining the run parameters of different
+schedulers. In the given example below, a `conffile` (see
+_`.batchtools.conf.R`_ samples [here](https://mllg.github.io/batchtools/)) and
+a `template` file (see _`*.tmpl`_ samples
+[here](https://github.com/mllg/batchtools/tree/master/inst/templates)) need to be present
+on the highest level of a user's workflow project. The following example uses the sample
+`conffile` and `template` files for the Slurm scheduler that are both provided by this
+package. 
 
-The `resources` list object provides the number of independent parallel cluster 
-processes defined under the `Njobs` element in the list. The following example 
-will run 18 processes in parallel using each 4 CPU cores. 
-If the resources available on a cluster allow running all 18 processes at the 
-same time, then the shown sample submission will utilize in a total of 72 CPU cores.
-
-Note, `runWF` can be used with most queueing systems as it is based on utilities 
-from the `batchtools` package, which supports the use of template files (_`*.tmpl`_)
-for defining the run parameters of different schedulers. To run the following 
-code, one needs to have both a `conffile` (see _`.batchtools.conf.R`_ samples [here](https://mllg.github.io/batchtools/)) 
-and a `template` file (see _`*.tmpl`_ samples [here](https://github.com/mllg/batchtools/tree/master/inst/templates)) 
-for the queueing available on a system. The following example uses the sample 
-`conffile` and `template` files for the Slurm scheduler provided by this package. 
-
-The resources can be appended when the step is generated, or it is possible to 
-add these resources later, as the following example using the `addResources` 
-function:
+The `resources` list can be added to analysis steps when a workflow is loaded into `SAL`. 
+Alternatively, one can add the resource settings with the `addResources` function 
+to any step of a pre-populated `SAL` container afterwards. For workflow steps with the same resource 
+requirements, one can add them to several steps at once with a single call to `addResources` by 
+specifying multiple step names under the `step` argument.
 
 ```{r runWF_cluster, eval=FALSE}
 resources <- list(conffile=".batchtools.conf.R",
                   template="batchtools.slurm.tmpl", 
                   Njobs=18, 
-                  walltime=120, ## minutes
+                  walltime=120, ## in minutes
                   ntasks=1,
                   ncpus=4, 
-                  memory=1024, ## Mb
-                  partition = "short"
+                  memory=1024, ## in Mb
+                  partition = "short"  
                   )
-sal <- addResources(sal, c("hisat2_mapping"), resources = resources)
+sal <- addResources(sal, step=c("hisat2_mapping"), resources = resources)
 sal <- runWF(sal)
 ```
 
-Note: The example is submitting the jog to `short` partition. If you desire to 
-use a different partition, please adjust accordingly.
+The above example will submit via `runWF(sal)` the *hisat2_mapping* step
+to a partition (queue) called `short` on an HPC cluster. Users need to adjust this and
+other parameters, that are defined in the `resources` list, to their cluster environment .
 
-# Visualize workflow
+# Visualize workflows
 
-_`systemPipeR`_ workflows instances can be visualized with the `plotWF` function.
+Workflows instances can be visualized as topology graphs with the `plotWF` function.
+The resulting plot includes the following information.
 
-This function will make a plot of selected workflow instance and the following 
-information is displayed on the plot:
+    - Workflow topology graph rendered based on dependencies among steps
+    - Workflow step status, e.g. Success, Error, Pending, Warnings
+    - Sample status and statistics
+    - Run time of individual steps
 
-    - Workflow structure (dependency graphs between different steps); 
-    - Workflow step status, *e.g.* `Success`, `Error`, `Pending`, `Warnings`; 
-    - Sample status and statistics; 
-    - Workflow timing: running duration time. 
-
-If no argument is provided, the basic plot will automatically detect width, 
-height, layout, plot method, branches, _etc_. 
+If no layout parameters are provided, then `plotWF` will automatically detect reasonable settings
+for a user's system, including width, height, layout, plot method, branch styles and others.
 
 ```{r, eval=TRUE}
 plotWF(sal, show_legend = TRUE, width = "80%", rstudio = TRUE)
 ```
 
-For more details about the `plotWF` function, please see [here](#plotWF).
+For more details about the `plotWF` function, please visit its help with `?plotWF`.
 
-# Technical report
+# Report generation
 
-_`systemPipeR`_ compiles all the workflow execution logs in one central location, 
-making it easier to check any standard output (`stdout`) or standard error 
-(`stderr`) for any command-line tools used on the workflow or the R code `stdout`.
-Also, the workflow plot is appended at the beginning of the report, making it 
-easier to click on the respective step.
+`systemPipeR` produces two report types: Scientific and Technical. The
+Scientific Report resembles a scientific publication detailing data analysis,
+results, and interpretation information. The Technical Report provides logging
+information useful for assessing workflow steps and troubleshooting problems.
+
+## Scientific reports
+
+After a workflow run, `systemPipeR's` `renderReport` or `rmarkdown's` `render`
+function can be used to generate  Scientific Reports in HTML, PDF or other
+formats. The former uses the final `SAL` instance as input, and the latter the
+underlying Rmd file. The resulting reports mimic research papers by combining
+user-generated text with analysis results, creating reproducible analysis
+reports. This reporting infrastructure offers support for citations,
+auto-generated bibliographies, code chunks with syntax highlighting, and inline
+evaluation of variables to update text content. Tables and figures in a report
+can be automatically updated when the document is rebuilt or workflows are
+rerun, ensuring data components are always current. This automation increases
+reproducibility and saves time creating Scientific Reports. Furthermore, the
+workflow topology maps described earlier can be incorporated into Scientific
+Reports, enabling integration between Scientific and Technical Reports. 
+
+```{r, eval=FALSE}
+sal <- renderReport(sal)
+
+rmarkdown::render("my.Rmd", clean = TRUE, output_format = "BiocStyle::html_document") 
+```
+Note, `my.Rmd` in the last code line needs to be replaced with the name (path) of 
+the source `Rmd` file used for generating the `SAL` workflow container. 
+
+## Technical report
+
+The package collects technical information about workflow runs in a project’s
+log directory (default name: `.SPRproject`). After partial or full completion
+of a workflow, the logging information of a run is used by the `renderLog`
+function to generate a Technical Report in HTML or other formats. The report
+includes software execution commands, warnings and errors messages of each
+workflow step. Easy visual navigation of Technical Reports is provided by
+including an interactive instance of the corresponding workflow topology graph.
+The technical details in these reports help assess the success of each workflow
+step and facilitate troubleshooting.
 
 ```{r, eval=FALSE}
 sal <- renderLogs(sal)
 ```
 
-# Exported the workflow 
+# Converting workflows to Bash and Rmd
 
-_`systemPipeR`_ workflow management system allows to translate and export the 
-workflow build interactively to R Markdown format or an executable bash script.
-This feature advances the reusability of the workflow, as well as the flexibility
-for workflow execution.
+The SAL workflow containers of `systemPipeR` offer convenient conversion and
+export options to Rmd and executable Bash scripts. This feature not only
+enhances the portability and reusability of workflows across different systems
+but also promotes transparency, facilitating efficient testing and
+troubleshooting.
 
-## R Markdown file
+## R Markdown script
 
-`sal2rmd` function takes an `SYSargsList` workflow container and translates it to 
-SPR workflow template R markdown format. This file can be imported with the 
-`importWF` function, as demonstrated above.
+A populated `SAL` workflow container can be converted to an Rmd file using the
+`sal2rmd` function. If needed, this `Rmd` file can be used to construct a `SAL`
+workflow container with the `importWF` function as introduced above. This
+functionality is useful for building templates of workflow Rmds and sharing
+them with other systems. 
 
 ```{r, eval=FALSE}
 sal2rmd(sal)
@@ -1043,19 +1162,17 @@ sal2rmd(sal)
 
 ## Bash script
 
-`sal2bash` function takes an `SYSargsList` workflow container and translates 
-it to an executable bash script, so one can run the workflow without loading 
-`SPR` or using an R console.
-
+The `sal2bash` function converts and exports workflows stored in SAL containers
+into executable Bash scripts. This enables users to run their workflows as Bash
+scripts from the command line. The function takes a SAL container as input and
+generates a `spr_wf.sh` file in the project's root directory as output.
+Additionally, it creates a `spr_bash` directory that stores all R-based workflow
+steps as separate R scripts. To minimize the number of R scripts needed, the 
+function combines adjacent R steps into a single file. 
 
 ```{r, eval=FALSE}
 sal2bash(sal)
 ```
-
-It will be generated on the project root an executable bash script, called by
-default the `spr_wf.sh`. Also, a directory `./spr_wf` will be created and store 
-all the R scripts based on the workflow steps. Please note that this function will 
-"collapse" adjacent R steps into one file as much as possible.
 
 # Project Resume and Restart
 
@@ -1111,7 +1228,7 @@ sal <- SPRproject(overwrite = TRUE)
 _`systemPipeR`_ provide several accessor methods and useful functions to explore 
 `SYSargsList` workflow object.
 
-## Accessor Methods
+## Accessor Methods {#accessor-methods}
 
 Several accessor methods are available that are named after the slot names of
 the `SYSargsList` workflow object.
