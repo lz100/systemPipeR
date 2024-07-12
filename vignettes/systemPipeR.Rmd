@@ -281,9 +281,7 @@ rmarkdown::render("systemPipeRNAseq.Rmd", clean = TRUE, output_format = "BiocSty
 sal <- renderLogs(sal)
 ```
 
-# Other data structures
-
-## Directory structure {#wf-directories}
+# Directory structure {#wf-directories}
 
 The root directory of `systemPipeR` workflows contains by default three user 
 facing sub-directories: `data`, `results` and `param`. A fourth sub-directory is 
@@ -320,7 +318,7 @@ knitr::include_graphics("images/spr_project.png")
 ```
 -->
 
-## The _`targets`_ file {#targets-files}
+# The _`targets`_ file {#targets-files}
 
 A `targets` file defines the input files (_e.g._ FASTQ, BAM, BCF) and
 sample comparisons used in a data analysis workflow. It can also store any number of 
@@ -1007,7 +1005,8 @@ sal
 Several accessor functions can be used to retrieve additional information about
 workflows and their run status. The code box below lists these functions,
 omitting their output for brevity. Although some of these functions have been
-introduced above already, they are included here again for easy reference.
+introduced above already, they are included here again for easy reference. Additional, 
+details on these functions can be found [here](#sysargslist).
 
 ```{r show_statusWF_details2, eval=FALSE}
 stepsWF(sal)
@@ -1017,6 +1016,47 @@ codeLine(sal)
 targetsWF(sal)
 statusWF(sal)
 projectInfo(sal)
+```
+
+While `SAL` objects are autosaved when working with workflows, it
+can be sometimes safer to explicity save the object before closing R.
+
+```{r save_sal, eval=FALSE}
+sal <- write_SYSargsList(sal)
+```
+
+## Module system
+
+Some computing systems, such as HPC clusters, allow users to load software via
+an [Environment Modules](https://modules.sourceforge.net/) system into their
+`PATH`. If a module system is available, the function `module` allows to
+interact with it from within R. Specific actions are controlled by values
+passed on to the `action_type` argument of the `module` function, such as
+loading and unloading software with `load` and `unload`, respectively.
+Additionally, dedicated functions are provided for certain actions. The
+following code examples are not evaluated since they will only work on systems where
+an Environment Modules software is installed. A full list of actions and
+additional functions for Environment Modules can be accessed with `?module`.
+
+```{r module_cmds, eval=FALSE}
+module(action_type="load", module_name="hisat2")
+moduleload("hisat2") # alternative command
+moduleunload("hisat2")
+modulelist() # list software loaded into current session
+moduleAvail() # list all software available in module system
+```
+
+Note, the module load/unload actions can be defined in the R/Rmd workflow
+scripts or in the CWL parameter files. The `listCmdModules` function can be
+used, to list the names and versions of all software tools that are loaded via
+Environment Modules in each step of a `SAL` workflow container. Independent of
+the usage of an Environment Modules system, all CL software used by each step
+in a workflow can be listed with `listCmdTools`. The output of both fumction
+calls is not shown below for the same reason as in the previous code chunk.
+
+```{r list_module, eval=FALSE}
+listCmdModules(sal)
+listCmdTools(sal)
 ```
 
 ## Parallel evaluation
@@ -1074,7 +1114,7 @@ The above example will submit via `runWF(sal)` the *hisat2_mapping* step
 to a partition (queue) called `short` on an HPC cluster. Users need to adjust this and
 other parameters, that are defined in the `resources` list, to their cluster environment .
 
-# Visualize workflows
+# Visualize workflows {#visualize-wf}
 
 Workflows instances can be visualized as topology graphs with the `plotWF` function.
 The resulting plot includes the following information.
@@ -1142,10 +1182,10 @@ sal <- renderLogs(sal)
 
 # Converting workflows to Bash and Rmd
 
-The SAL workflow containers of `systemPipeR` offer convenient conversion and
-export options to Rmd and executable Bash scripts. This feature not only
+The SAL workflow containers of `systemPipeR` provide versatile conversion and
+export options to both Rmd and executable Bash scripts. This feature not only
 enhances the portability and reusability of workflows across different systems
-but also promotes transparency, facilitating efficient testing and
+but also promotes transparency, enabling efficient testing and
 troubleshooting.
 
 ## R Markdown script
@@ -1174,31 +1214,33 @@ function combines adjacent R steps into a single file.
 sal2bash(sal)
 ```
 
-# Project Resume and Restart
+# Restarting and resetting workflows
 
-If you desire to resume or restart a project that has been initialized in the past, 
-`SPRproject` function allows this operation.
+The ability to restart existing workflows projects is important for continuing analyses that could not 
+be completed, or to make changes without repeating already completed steps. Two main options are provided
+to restart workflows. Another option is provided that resets workflows to the very beginning, which effectively
+deletes the previous environment.
 
-With the `resume` option, it is possible to load the `SYSargsList` object in R and 
-resume the analysis. Please, make sure to provide the `logs.dir` location, and the 
-corresponded `YAML` file name, if the default names were not used when the project was created.
+__1. The `resume=TRUE` option__ will initialize the latest instance of a `SAL` object stored in the `logs.dir`
+   including its log files. When this option is used, a workflow can be continued where it was left off, 
+   for example after closing and restarting R from the same directory on the same system. If the project was created
+   with custom directory and/or file names, then those names need to be specified under the `log.dir` and `sys.file` 
+   arguments of the `SPRproject` function, respectively, otherwise the default names will be used. 
 
 ```{r SPR_resume, eval=FALSE}
-sal <- SPRproject(resume = TRUE, logs.dir = ".SPRproject", 
-                  sys.file = ".SPRproject/SYSargsList.yml") 
+sal <- SPRproject(resume = TRUE) 
 ```
 
-If you choose to save the environment in the last analysis, you can recover all 
-the files created in that particular section. `SPRproject` function allows this 
-with `load.envir` argument. Please note that the environment was saved only with
-you run the workflow in the last section (`runWF()`).
+If the R environment was saved, one can recover with `load.envir=TRUE` all
+objects that were created during the previous workflow run. The same is possible with 
+the `restart` option. For more details, please consult the help for the `runWF` function. 
 
 ```{r resume_load, eval=FALSE}
 sal <- SPRproject(resume = TRUE, load.envir = TRUE) 
 ```
 
-After loading the workflow at your current section, you can check the objects 
-created in the old environment and decide if it is necessary to copy them to the
+After resuming the workflow with `load.envir` enabled, one can inspect the objects 
+created in the old environment, and decide if it is necessary to copy them to the
 current environment.
 
 ```{r envir, eval=FALSE}
@@ -1206,205 +1248,255 @@ viewEnvir(sal)
 copyEnvir(sal, list="plot", new.env = globalenv())
 ```
 
-The `resume` option will keep all previous logs in the folder; however, if you desire to 
-clean the execution (delete all the log files) history and restart the workflow, 
-the `restart=TRUE` option can be used.
+__2. The `restart=TRUE` option__ will also use the latest instance of the `SAL` object stored in 
+   the `logs.dir`, but the previous log files will be deleted.
+
 
 ```{r restart_load, eval=FALSE}
-sal <- SPRproject(restart = TRUE, load.envir = FALSE) 
+sal <- SPRproject(restart = TRUE) 
 ```
 
-The last and more drastic option from `SYSproject` function is to `overwrite` the
-logs and the `SYSargsList` object. This option will delete the hidden folder and the 
-information on the `SYSargsList.yml` file. This will not delete any parameter
-file nor any results it was created in previous runs. Please use with caution. 
+__3. The `overwrite=TRUE` option__ will reset the workflow project to the very beginning by deleting the 
+   `log.dir` directory (`.SPRproject`) that stores the previous `SAL` instance and all its log files. At the same time 
+   a new and empty ‘SAL’ workflow container will be created. This option should be used with caution
+   since it will effectively delete the workflow environment. Output files written by the
+   workflow steps to the `results` directory will not be deleted when this option is used. 
 
 ```{r SPR_overwrite, eval=FALSE}
 sal <- SPRproject(overwrite = TRUE) 
 ```
 
-# Exploring workflow instances {#sysargslist}
 
-_`systemPipeR`_ provide several accessor methods and useful functions to explore 
-`SYSargsList` workflow object.
+# Additional utilities {#sysargslist}
+
+This section describes methods for accessing, subsetting and modifying `SAL`
+workflow objects.
 
 ## Accessor Methods {#accessor-methods}
 
-Several accessor methods are available that are named after the slot names of
-the `SYSargsList` workflow object.
+Workflows and their run status can be explored further using a range of
+accessor functions for `SAL` objects. 
 
-```{r}
-names(sal)
-```
+### General information
 
-- Check the length of the workflow:
+The number of steps in a workflow can be determined with the `length` function.
 
 ```{r}
 length(sal)
 ```
 
-- Check the steps of the workflow:
-
-```{r}
-stepsWF(sal)
-```
-
-- Checking the command-line for each target sample:
-
-`cmdlist()` method printing the system commands for running command-line
-software as specified by a given `*.cwl` file combined with the paths to the
-input samples (*e.g.* FASTQ files) provided by a `targets` file. The example below
-shows the `cmdlist()` output for running `gzip` and `gunzip` on the first sample. 
-Evaluating the output of `cmdlist()` can be very helpful for designing
-and debugging `*.cwl` files of new command-line software or changing the
-parameter settings of existing ones.
-
-```{r}
-cmdlist(sal, step = c(2,3), targets = 1)
-```
-
-- Check the workflow status:
-
-```{r}
-statusWF(sal)
-```
-
-- Check the workflow targets files:
-
-```{r}
-targetsWF(sal[2])
-```
-
-- Checking the expected outfiles files:
-
-The `outfiles` components of `SYSargsList` define the expected outfiles files 
-for each step in the workflow, some of which are the input for the next workflow step.
-
-```{r}
-outfiles(sal[2])
-```
-
-- Check the workflow dependencies:
-
-```{r}
-dependency(sal)
-```
-
-- Check the sample comparisons:
-
-Sample comparisons are defined in the header lines of the `targets` file 
-starting with '``# <CMP>``'. This information can be accessed as follows:
-
-```{r, eval=FALSE}
-targetsheader(sal, step = "Quality")
-```
-
-- Get the workflow steps names: 
+The corresponding names of workflow steps can be returned with `stepName`.
 
 ```{r}
 stepName(sal)
 ```
 
-- Get the Sample Id for on particular step:
+CL software used by each step in a workflow can be listed with `listCmdTools`.
+
+```{r}
+listCmdTools(sal)
+```
+
+Some computing systems (often HPC clusters) allow users to load CL software via 
+an [Environment Modules](http://modules.sourceforge.net/) system into their PATH. 
+If this is the case, then the exact verions of the software tools loaded via the 
+module system can be listed for `SAL` and `SYSargs2` objects with `listCmdModules`
+and `modules`, respectively. The example workflow used here 
+does not make use of Environment Modules, and thus there are no software tools 
+to list here. 
+
+```{r}
+listCmdModules(sal)
+modules(stepsWF(sal)$gzip)
+```
+
+For more information on how to work with Environment Modules in `systemPipeR`, please
+visit the help with `?module`, `?modules` and `?listCmdModules`.
+
+### Slot data
+
+Several accessor functions are named after the corresponding slot names in
+`SAL` objects. This makes it easy to look them up with `names()`, and then
+apply them to `sal` as the only argument, such as `runInfo(sal)`. 
+
+```{r}
+names(sal)
+```
+
+The individual workflow steps in a `SAL` container are stored as `SYSargs2` and `LineWise` 
+components. They can be returned with the `stepsWF` function. 
+
+```{r}
+stepsWF(sal)
+```
+
+The `statusWF` function returns a status summary for each step in a `SAL` workflow instance. 
+
+```{r}
+statusWF(sal)
+```
+
+The `targets` instances for each step in a workflow can be returned with `targetsWF`. The 
+below applies it to the second step.
+
+```{r}
+targetsWF(sal[2])
+```
+
+If a workflow contains sample comparisons, that have been specified in the header 
+lines of a targets file starting with a `# <CMP> tag`, then they can be returned 
+with the `targetsheader` functions. This does not apply to the current demo `sal` 
+instance, and thus the function returns `NULL`. For more details, consult the `targets` 
+file section [here](#targets-files).
+
+```{r, eval=FALSE}
+targetsheader(sal, step = "Quality")
+```
+
+The `outfiles` component of a `SAL` object stores the paths to the expected outfiles files 
+for each step in a workflow. Some of them are the input for downstream workflow steps.
+
+```{r}
+outfiles(sal[2])
+```
+
+The `dependency` step(s) in a workflow can be obtained with the
+`dependency` function. This information is used to construct the toplogy
+graph of a workflow (see [here](#visualize-wf)). 
+
+```{r}
+dependency(sal)
+```
+
+The sample names (IDs) stored in the corresponding column of a targets file 
+can be returned with the `SampleName` function. 
 
 ```{r}
 SampleName(sal, step = "gzip")
-SampleName(sal, step = "iris_stats")
 ```
 
-- Get the `outfiles` or `targets` column files: 
+The `getColumn` method can be used to obtain the paths to the files generated in a
+specified step.
 
 ```{r}
 getColumn(sal, "outfiles", step = "gzip", column = "gzip_file")
 getColumn(sal, "targetsWF", step = "gzip", column = "FileName")
 ```
 
-- Get the R code for a `LineWise` step:
-
-```{r}
-codeLine(sal, step = "export_iris")
-```
-
-- View all the objects in the running environment:
-
-```{r}
-viewEnvir(sal)
-```
-
-- Copy one or multiple objects from the running environment to a new environment:
-
-```{r}
-copyEnvir(sal, list = c("plot"), new.env = globalenv(), silent = FALSE)
-```
-
-- Accessing the `*.yml` data
+The `yamlinput` function returns the parameters of a workflow step defined in the 
+corresponding yml file.
 
 ```{r}
 yamlinput(sal, step = "gzip")
 ```
 
-## Subsetting the workflow details
+### CL and R code
 
-- The `SYSargsList` class and its subsetting operator `[`:
+The exact syntax for running CL software on each input data set in a workflow can 
+be returned with the `cmdlist` function. The CL calls are assembled from the corresponding
+`yml` and `cwl`, and an optional `targets` file as described in the above CLI section
+[here](#cl-interface). The example below shows the CL syntax for running `gzip`
+and `gunzip` on the first input sample. Evaluating the output of `cmdlist` can
+be very helpful for designing and debugging CWL parameter files to support new CL
+software or changing their settings.
 
 ```{r}
-sal[1]
-sal[1:3]
-sal[c(1,3)]
+cmdlist(sal, step = c(2,3), targets = 1)
 ```
 
-- The `SYSargsList` class and its subsetting by steps and input samples: 
+Similarly, the `codeLine` function returns the R code of a `LineWise` workflow step.
 
 ```{r}
-sal_sub <- subset(sal, subset_steps = c( 2,3), input_targets = ("SE"), keep_steps = TRUE)
+codeLine(sal, step = "export_iris")
+```
+
+### R environment
+
+The objects generated in a workflow's run environment can be accessed with `viewEnvir`.
+
+```{r}
+viewEnvir(sal)
+```
+
+If needed one or multiple objects can be copied from the run environment of a workflow 
+to the current environment of an R session.
+
+```{r}
+copyEnvir(sal, list = c("plot"), new.env = globalenv(), silent = FALSE)
+```
+
+## Subsetting workflows
+
+The bracket operator can be used to subset workflow by steps. For instance, the current
+instance of `sal` has four steps, and `sal[1:2]` will subset the workflow to the first two 
+steps. 
+
+```{r}
+length(sal)
+sal[1:2]
+```
+
+In addition to subsetting by steps, one can subset workflows by input samples. The following
+illustrates this for the first two input samples, but omits the function output for brevity.
+
+```{r, eval=FALSE}
+sal_sub <- subset(sal, subset_steps = c(2,3), input_targets = c("SE", "VE"), keep_steps = TRUE)
 stepsWF(sal_sub)
 targetsWF(sal_sub)
 outfiles(sal_sub)
 ```
 
-- The `SYSargsList` class and its operator `+`
+For appending workflow steps, one can use the `+` operator.
 
 ```{r, eval=FALSE}
 sal[1] + sal[2] + sal[3]
 ```
 
-## Replacement Methods
+## Replacement methods
 
-- Update a `input` parameter in the workflow
+Replacement methods are implemented to make adjustments to certain paramer settings and
+R code in workflow steps.  
+
+### Changing parameters
 
 ```{r, eval=TRUE}
+## create a copy of sal for testing
 sal_c <- sal
-## check values
-yamlinput(sal_c, step = "gzip")
-## check on command-line
-cmdlist(sal_c, step = "gzip", targets = 1)
-## Replace
+## view original value, here restricted to 'ext' slot
+yamlinput(sal_c, step = "gzip")$ext
+## Replace value under 'ext' 
 yamlinput(sal_c, step = "gzip", paramName = "ext") <- "txt.gz"
-
-## check NEW values
-yamlinput(sal_c, step = "gzip")
-## Check on command-line
+## view modified value, here restricted to 'ext' slot
+yamlinput(sal_c, step = "gzip")$ext
+## Evaluate resulting CL call
 cmdlist(sal_c, step = "gzip", targets = 1)
 ```
 
-- Append and Replacement methods for R Code Steps
+### Changes to R steps 
+
+Code lines can be added with `appendCodeLine` to R steps (`LineWise`) as shown in the 
+following example. 
 
 ```{r, sal_lw_rep, eval=TRUE}
 appendCodeLine(sal_c, step = "export_iris", after = 1) <- "log_cal_100 <- log(100)"
 codeLine(sal_c, step = "export_iris")
+```
 
+In addition, code lines can be replaced with the `replaceCodeLine` function.
+For additional details about the `LineWise` class, please see the example
+[above](#appendstep) and the detailed description of the `LineWise` class
+[here](#linewise).
+
+```{r, sal_lw_rep2, eval=TRUE}
 replaceCodeLine(sal_c, step="export_iris", line = 2) <- LineWise(code={
                     log_cal_100 <- log(50)
                     })
-codeLine(sal_c, step = 1)
+codeLine(sal_c, step = "export_iris")
 ```
 
-For more details about the `LineWise` class, please see [below](#linewise).
-
-- Rename a Step
+Renaming of workflow steps is possible with the `renameStep` function.
 
 ```{r}
-renameStep(sal_c, step = 1) <- "newStep"
 renameStep(sal_c, c(1, 2)) <- c("newStep2", "newIndex")
 sal_c
 names(outfiles(sal_c))
@@ -1412,7 +1504,11 @@ names(targetsWF(sal_c))
 dependency(sal_c)
 ```
 
-- Replace a Step
+### Replacing workflow steps
+
+The `replaceStep` function can be used to replace entire workflow steps. When
+replacing workflow steps, it is important to maintain a valid dependency graph
+among the affected steps. 
 
 ```{r, eval=FALSE}
 sal_test <- sal[c(1,2)]
@@ -1420,15 +1516,13 @@ replaceStep(sal_test, step = 1, step_name = "gunzip" ) <- sal[3]
 sal_test
 ```
 
-Note: Please use this method with attention, because it can disrupt all 
-the dependency graphs. 
-
-- Removing a Step
+If needed, workflow steps can be removed as follows. 
 
 ```{r}
 sal_test <- sal[-2]
 sal_test
 ```
+
 
 # CWL syntax {#cwl}
 
