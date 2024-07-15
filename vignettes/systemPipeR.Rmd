@@ -84,27 +84,31 @@ knitr::include_graphics("images/SYSargsList.png")
 ```
 ## CL interface (CLI) {#cl-interface}
 
-_`systemPipeR`_ adopts the Common Workflow Language (CWL) [@Amstutz2016-ka], which is a
-widely used community standard for describing CL tools and workflows
-in a declarative, generic, and reproducible manner. CWL specifications are
-text-based YAML (https://yaml.org/) files that are straightforward to create and 
-to modify. Integrating CWL in `systemPipeR` enhances the sharability, standardization, 
-extensibility and portability of data analysis workflows.
+_`systemPipeR`_ adopts the [Common Workflow Language
+(CWL)](https://www.commonwl.org/index.html), which is a widely used community
+standard for describing CL tools and workflows in a declarative, generic, and
+reproducible manner [@Amstutz2016-ka]. CWL specifications are human-readable
+[YAML](https://www.commonwl.org/user_guide/topics/yaml-guide.html) files that
+are straightforward to create and to modify. Integrating CWL in `systemPipeR`
+enhances the sharability, standardization, extensibility and portability of
+data analysis workflows.
 
-Following the [CWL Specifications](https://www.commonwl.org/v1.2/CommandLineTool.html), the basic
-description for executing a command-line software are defined by two files: a
-cwl step definition file and a yml configuration file. Figure
-\@ref(fig:sprandCWL) illustrates the utilitity of the two files using “Hello World” 
-as an example. The cwl file (A) defines the CL tool (C) along with
-its parameters, and the yml file (B) assigns values to the corresponding parameters.
-For convenience, parameter values can be provided by a targets file (D, see above), and
-automatically passed on to the corresponding parameters in the yml file. The usage
-of a targets file greatly simplifies the operation of the system for users, because a tabular 
-metadata file is intuitive to maintain, and it eliminates the need of modifying the more complex 
-cwl and yml files directly. The structure of `targets` files is explained in the corresponding
-section [below](#targets-files). A detailed overview of the CWL syntax is provided in the 
-[CWL syntax](#cwl) section below, and the details for connecting the input information in `targets` 
-with CWL parameters are described [here](#cwl_targets). 
+Following the CWL Specifications, the basic description for executing a CL
+software are defined by two files: a cwl step definition file and a yml
+configuration file. Figure \@ref(fig:sprandCWL) illustrates the utilitity of
+the two files using “Hello World” as an example. The cwl file (A) defines the
+parameters of CL tool or workflow (C), and the yml file (B) assigns the input
+variables to the corresponding parameters. For convenience, in `systemPipeR` parameter
+values can be provided by a targets file (D, see above), and automatically
+passed on to the corresponding parameters in the yml file. The usage of a
+targets file greatly simplifies the operation of the system for users, because
+a tabular metadata file is intuitive to maintain, and it eliminates the need of
+modifying the more complex cwl and yml files directly. The structure of
+`targets` files is explained in the corresponding section
+[below](#targets-files). A detailed overview of the CWL syntax is provided in
+the [CWL syntax](#cwl) section below, and the details for connecting the input
+information in `targets` with CWL parameters are described
+[here](#cwl_targets). 
 
 ```{r sprandCWL, warning=FALSE, eval=TRUE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "Parameter files. Illustration how the different fields in cwl, yml and targets files are connected to assemble command-line calls, here for 'Hello World' example.", warning=FALSE}
 
@@ -123,11 +127,12 @@ mainly as a command-line and workflow definition format rather than execution
 software to run workflows. --> 
 The package also provides several convenience
 functions that are useful for designing and testing workflows, such as a
-command-line rendering function that assembles from the parameter files (cwl, yml and 
-targets) the exact command-line strings for each step prior to running a command-line tool. 
-Auto-generation of CWL parameter files is also supported. Here, users can simply 
-provide the command-line strings for a command-line software of interest to a rendering function that generates 
-the corresponding `*.cwl` and `*.yml` files for them. 
+[CL rendering function](#cmd-step) that assembles from the parameter files (cwl, yml and 
+targets) the exact CL strings for each step prior to running a CL tool. 
+[Auto-generation of CWL](#cwl-auto-generation) parameter files is also supported. Here, users can simply 
+provide the CL strings for a CL software of interest to a rendering function that generates 
+the corresponding `*.cwl` and `*.yml` files for them. And auto-conversion of workflows to 
+executable [Bash scripts](#bash-script).
 
 
 <!--
@@ -208,7 +213,7 @@ sal <- importWF(sal, file_path = "systemPipeRNAseq.Rmd") # import into sal the W
 The `importWF` function also checks the availability of the R packages and CL 
 software tools used by a workflow. All dependency CL software needs to be installed and exported to a user's
 `PATH`. In the given example, the CL tools `trimmomatic`, `hisat2-build`, `hisat2`, 
-and `samtools` are listed. If the `in_path` columns shows `FALSE` for 
+and `samtools` are listed. If the `in_path` column shows `FALSE` for 
 any of them, then the missing CL software needs to be installed and made available in a user's
 `PATH` prior to running the workflow. Note, the shown availability table of CL tools can 
 also be returned with `listCmdTools(sal, check_path=TRUE)`, and the availability of individual CL
@@ -620,7 +625,7 @@ constructing and connecting different types of workflow steps, this tutorial
 section introduces first the interactive approach. After this the automated
 import of entire workflows with many steps is explained where the individual
 steps are defined the same way. In all cases, workflow steps are loaded to a
-`SAL` workflow container with the proper connectivity information using using
+`SAL` workflow container with the proper connectivity information using
 `systemPipeR's` `appendStep` method where steps can be comprised of R code or
 CL calls.
 
@@ -681,7 +686,7 @@ To extract the code of an R step stored in a `SAL` object, the `codeLine` method
 codeLine(sal)
 ```
 
-#### Step 2: CL step
+#### Step 2: CL step {#cmd-step}
 
 CL steps are stored as `SYSargs2` objects that are constructed with the
 `SYSargsList` function, and then appended to `sal` with the `appendStep<-`
@@ -810,7 +815,7 @@ getColumn(sal, step = "gunzip", 'outfiles')
 In this R step, the tabular files generated in the previous `gunzip` CL step
 are imported into R and row appended to a single `data.frame`. Next the
 column-wise mean values are calculated for the first four columns.
-Subsequently, the results are plotted as bar diagram with error bars. 
+Subsequently, the results are plotted as a bar diagram with error bars. 
 
 ```{r, iris_stats, eval=TRUE}
 appendStep(sal) <- LineWise(code = {
@@ -877,7 +882,7 @@ sal_rmd <- importWF(sal_rmd,
 
 After the import, the new `sal_rmd` workflow container, that is fully populated with all four workflow 
 steps from [before](#appendstep), can be inspected with several accessor functions (not 
-evaluated here).
+evaluated here). Additional details about accessor functions are provided [here](#accessor-methods).
 
 ```{r importWF_details, eval=FALSE}
 sal_rmd
@@ -1074,7 +1079,7 @@ After adding the parallelization parameters, `runWF` will execute the chosen ste
 in parallel mode as instructed. 
 
 The following example applies to an alignment step of an RNA-Seq workflow. The
-above demonstration workflow is not used here since is too simple to benefit
+above demonstration workflow is not used here since it is too simple to benefit
 from parallel processing. In the chosen alignment example, the parallelization
 parameters are added to the alignment step (here `hisat2_mapping`) of `SAL` via
 a `resources` list. The given parameter settings will run 18 processes (`Njobs`) in
@@ -1119,10 +1124,10 @@ other parameters, that are defined in the `resources` list, to their cluster env
 Workflows instances can be visualized as topology graphs with the `plotWF` function.
 The resulting plot includes the following information.
 
-    - Workflow topology graph rendered based on dependencies among steps
-    - Workflow step status, e.g. Success, Error, Pending, Warnings
-    - Sample status and statistics
-    - Run time of individual steps
++ Workflow topology graph rendered based on dependencies among steps
++ Workflow step status, e.g. Success, Error, Pending, Warnings
++ Sample status and statistics
++ Run time of individual steps
 
 If no layout parameters are provided, then `plotWF` will automatically detect reasonable settings
 for a user's system, including width, height, layout, plot method, branch styles and others.
@@ -1137,15 +1142,16 @@ For more details about the `plotWF` function, please visit its help with `?plotW
 
 `systemPipeR` produces two report types: Scientific and Technical. The
 Scientific Report resembles a scientific publication detailing data analysis,
-results, and interpretation information. The Technical Report provides logging
-information useful for assessing workflow steps and troubleshooting problems.
+results, interpretation information, and user-provided text. The Technical
+Report provides logging information useful for assessing workflow steps and
+troubleshooting problems.
 
 ## Scientific reports
 
 After a workflow run, `systemPipeR's` `renderReport` or `rmarkdown's` `render`
 function can be used to generate  Scientific Reports in HTML, PDF or other
 formats. The former uses the final `SAL` instance as input, and the latter the
-underlying Rmd file. The resulting reports mimic research papers by combining
+underlying Rmd source file. The resulting reports mimic research papers by combining
 user-generated text with analysis results, creating reproducible analysis
 reports. This reporting infrastructure offers support for citations,
 auto-generated bibliographies, code chunks with syntax highlighting, and inline
@@ -1200,7 +1206,7 @@ them with other systems.
 sal2rmd(sal)
 ```
 
-## Bash script
+## Bash script {#bash-script}
 
 The `sal2bash` function converts and exports workflows stored in SAL containers
 into executable Bash scripts. This enables users to run their workflows as Bash
@@ -1272,7 +1278,7 @@ sal <- SPRproject(overwrite = TRUE)
 This section describes methods for accessing, subsetting and modifying `SAL`
 workflow objects.
 
-## Accessor Methods {#accessor-methods}
+## Accessor methods {#accessor-methods}
 
 Workflows and their run status can be explored further using a range of
 accessor functions for `SAL` objects. 
@@ -1328,6 +1334,13 @@ components. They can be returned with the `stepsWF` function.
 
 ```{r}
 stepsWF(sal)
+```
+
+The accessor function of `SYSargs2` and `LineWise` objects can be returned similarly 
+(here for `gzip` step). 
+
+```{r}
+names(stepsWF(sal)$gzip)
 ```
 
 The `statusWF` function returns a status summary for each step in a `SAL` workflow instance. 
@@ -1524,144 +1537,148 @@ sal_test
 ```
 
 
-# CWL syntax {#cwl}
+# CWL specifications {#cwl}
 
-This section will introduce how CWL describes command-line tools and the 
-specification and terminology of each file. 
-For complete documentation, please check the CommandLineTools documentation [here](https://www.commonwl.org/v1.2/CommandLineTool.html) 
-and [here](https://www.commonwl.org/v1.2/Workflow.html) for Workflows and the user guide [here](https://www.commonwl.org/user_guide/). 
+This section provides a concise overview of [CWL](https://www.commonwl.org/user_guide/topics/) 
+and its utilization within `systemPipeR`. It covers fundamental CWL concepts, including 
+the `CommandLineTool` and `Workflow` classes for describing individual CL processes and 
+workflows. For further details, readers want to refer to CWL's comprehensive
+[CommandLineTool](https://www.commonwl.org/user_guide/topics/command-line-tool.html) and 
+[Workflow](https://www.commonwl.org/user_guide/topics/workflows.html) documentation, as well 
+as the examples provided in CWL's [Beginner Tutorial](https://carpentries-incubator.github.io/cwl-novice-tutorial/) 
+and [User Guide](https://www.commonwl.org/user_guide/). Additionally, familiarizing oneself 
+with [CWL's YAML](https://www.commonwl.org/user_guide/topics/yaml-guide.html) format 
+specifications can be beneficial.
 
-CWL command-line specifications are written in [YAML](http://yaml.org/) format.
+As illustrated in the introduction ([Fig 2](#cl-interface)), CWL files with the '`.cwl`' 
+extension define the parameters of a specific CL step or workflow, while files
+with the '`.yml`' extension define their input values.
 
-In CWL, files with the extension `.cwl` define the parameters of a chosen 
-command-line step or workflow, while files with the extension `.yml` define 
-the input variables of command-line steps. 
+## CWL `CommandLineTool` {#cwl-clt}
 
-## CWL `CommandLineTool`
+A Command Line Tool (`CommandLineTool` class) specifies a standalone process
+that can be run by itself (without including interactions with other
+programs), and has inputs and outputs.
 
-`CommandLineTool` by CWL definition is a standalone process, with no interaction 
-if other programs, execute a program, and produce output. 
-
-Let's explore the `*.cwl` file: 
+The following inspects the basic structure of a '`.cwl`' sample file for a `CommandLineTool` 
+that is provided by this package. 
 
 ```{r}
 dir_path <- system.file("extdata/cwl", package = "systemPipeR")
 cwl <- yaml::read_yaml(file.path(dir_path, "example/example.cwl"))
 ```
+Important components include:
 
-- The `cwlVersion` component shows the CWL specification version used by the document. 
-- The `class` component shows this document describes a `CommandLineTool.`
-Note that CWL has another `class`, called `Workflow` which represents a union of one 
-or more command-line tools together. 
+__1.__ `cwlVersion`: version of CWL specification used by file.
+
+__2.__ `class`: declares description of a `CommandLineTool`. 
 
 ```{r}
 cwl[1:2]
 ```
 
-- `baseCommand` component provides the name of the software that we desire to execute.
+__3.__ `baseCommand`: name of CL tool.
 
 ```{r}
 cwl[3]
 ```
 
-- The `inputs` section provides the input information to run the tool. Important 
-components of this section are: 
-    - `id`: each input has an id describing the input name;
-    - `type`: describe the type of input value (string, int, long, float, double, 
-    File, Directory or Any);
-    - `inputBinding`: It is optional. This component indicates if the input 
-    parameter should appear on the command-line. If this component is missing 
-    when describing an input parameter, it will not appear in the command-line 
-    but can be used to build the command-line.
+__4.__ `inputs`: defines input information to run the tool. This includes:
+
+- `id`: each input has an `id` including name.
+- `type`: type of input value; one of `string`, `int`, `long`, `float`, `double`, 
+    `File`, `Directory` or `Any`.
+- `inputBinding`: indicates if the input parameter should appear in CL call. If 
+      missing input will not appear in the CL call.
 
 ```{r}
 cwl[4]
 ```
 
-- The `outputs` section should provide a list of the expected outputs after running the command-line tools. Important 
-components of this section are: 
-    - `id`: each input has an id describing the output name;
-    - `type`: describe the type of output value (string, int, long, float, double, 
-    File, Directory, Any or `stdout`);
-    - `outputBinding`: This component defines how to set the outputs values. The `glob` component will define the name of the output value. 
+__5.__. `outputs`: list of expected outputs after running the CL tool. Important components are:
+
+- `id`: each input has an `id` including name.
+- `type`: type of output value; one of `string`, `int`, `long`, `float`, `double`, 
+    `File`, `Directory`, `Any` or `stdout`);
+- `outputBinding`: defines how to set outputs values; `glob` specifies output value's name. 
 
 ```{r}
 cwl[5]
 ```
 
-- `stdout`: component to specify a `filename` to capture standard output.
-Note here we are using a syntax that takes advantage of the inputs section, 
-using results_path parameter and also the `SampleName` to construct the output `filename.` 
+__6.__ `stdout`: specifies `filename` for standard output. Note, by default `systemPipeR` 
+       constructs the output `filename` from `results_path` and `SampleName` (see above).
 
 ```{r}
 cwl[6]
 ```
 
-## CWL `Workflow`
+## CWL `Workflow` {#cwl-wf}
 
-`Workflow` class in CWL is defined by multiple process steps, where can have 
-interdependencies between the steps, and the output for one step can be used as 
-input in the further steps.
+CWL's `Workflow` class describes one or more workflow steps, declares
+their interdependencies, and defines how `CommandLineTools` are executed. 
+Its CWL file includes inputs, outputs, and steps. 
+
+The following illustrates the basic structure of a '`.cwl`' sample file for a `Workflow` 
+that is provided by this package. 
 
 ```{r}
 cwl.wf <- yaml::read_yaml(file.path(dir_path, "example/workflow_example.cwl"))
 ```
 
-- The `cwlVersion` component shows the CWL specification version used by the document. 
-- The `class` component shows this document describes a `Workflow`.
+__1.__ `cwlVersion`: version of CWL specification used by file.
+
+__2.__ `class`: declares description of a `Workflow` that describes one or 
+       more `CommandLineTools` and their combined usage. 
 
 ```{r}
 cwl.wf[1:2]
 ```
 
-- The `inputs` section describes the inputs of the workflow.
+__3.__ `inputs`: defines the inputs of the workflow. 
 
 ```{r}
 cwl.wf[3]
 ```
 
-- The `outputs` section describes the outputs of the workflow.
+__4.__ `outputs`: defines the outputs of the workflow.
 
 ```{r}
 cwl.wf[4]
 ```
 
-- The `steps` section describes the steps of the workflow. In this simple example, 
-we demonstrate one step.
+__5.__ `steps`: describes the steps of the workflow. The example below shows one step.
 
 ```{r}
 cwl.wf[5]
 ```
 
-## CWL Input Parameter 
+## CWL input values
 
-Next, let's explore the *.yml* file, which provide the input parameter values for all
-the components we describe above. 
-
-For this simple example, we have three parameters defined:
+The `.yml` file provides the input values for the parameters described above.
+The following example includes input values for three parameters (`message`,
+`SampleName` and `results_path`).
 
 ```{r}
 yaml::read_yaml(file.path(dir_path, "example/example_single.yml"))
 ```
 
-Note that if we define an input component in the *.cwl* file, this value needs 
-to be also defined here in the *.yml* file. 
+Note, the `.yml` file needs to provide input values for each input parameter 
+specified in the corresponding `.cwl` file (compare `cwl[4]` above).
 
-# How to connect CWL description files within _`systemPipeR`_ {#cwl_targets}
+# Parameter mappings among `cwl`, `yml` and `targets` files {#cwl_targets}
 
-This section will demonstrate how to connect CWL parameters files to create 
-workflows. In addition, we will show how the workflow can be easily scalable 
-with _`systemPipeR`_.
+This section illustrates how the parameters in CWL files (`cwl` and `yml`) are 
+interconnected to construct CL calls of steps, and subsequently assembled 
+to workflows. 
 
-`SYSargsList` container stores all the information and instructions needed for processing 
-a set of input files with a single or many command-line steps within a workflow 
-(i.e. several components of the software or several independent software tools). 
-The `SYSargsList` object is created and fully populated with the `SYSargsList` construct
-function. 
-Full documentation of `SYSargsList` management instances can be found [here](#sysargslist)
-and [here](#appendstep).
+A `SAL` container (long name `SYSargsList`) stores all information and instructions 
+needed for processing a set of inputs (incl. files) with a single or many CL steps within a workflow 
+The `SAL` object is created and fully populated with the `SYSargsList` constructor
+function. More detailed documentation of `SAL` workflow instances is available
+[here](#appendstep) and [here](#sysargslist).
 
-The following imports a `.cwl` file (here `example.cwl`) for running the `echo Hello World!` 
+The following imports the `.cwl` and `.yml` files for running the `echo Hello World!`
 example.
 
 ```{r fromFile, eval=TRUE}
@@ -1672,60 +1689,56 @@ HW
 cmdlist(HW)
 ```
 
-However, we are limited to run just one command-line or one sample in this example. 
-To scale the command-line over many samples, a simple solution offered by `systemPipeR` 
-is to provide a `variable` for each of the parameters that we want to run with multiple samples. 
+The example provided is restricted to creating a CL call for a single input
+(sample). To process multiple inputs, a straightforward approach is to assign
+variables to the corresponding parameters instead of using fixed (hard-coded)
+values. These variables can then be assigned the desired input values
+iteratively, resulting in multiple CL calls, one for each input value. The 
+following illustrates this with an example, where the `message` and `SampleName` 
+parameters are assigned variables that are labeled with tags of the form
+`_XXX_`. These variables will be assigned values stored in a `targets` file. 
 
-Let's explore the example:
 
 ```{r}
 yml <- yaml::read_yaml(file.path(dir_path, "example/example.yml"))
 yml
 ```
 
-For the `message` and `SampleName` parameter, we are passing a variable connecting 
-with a third file called `targets.` 
-
-Now, let's explore the `targets` file structure:
+The content of the `targets` file used for this example is shown below. The 
+general structure of `targets` files is explained [above](#targets-files).
 
 ```{r}
 targetspath <- system.file("extdata/cwl/example/targets_example.txt", package = "systemPipeR")
 read.delim(targetspath, comment.char = "#")
 ```
 
-The `targets` file defines all input files or values and sample ids of an analysis workflow. 
-For this example, we have defined a string message for the `echo` command-line tool,
-in the first column that will be evaluated, and the second column is the 
-`SampleName` id for each one of the messages.
-Any number of additional columns can be added as needed.
+In the simple example given above the values stored under the `Message` and
+`SampleName` columns of the targets file will be passed on to the corresponding
+parameters with matching names in the `yml` file, and from there to
+the `echo` command defined in the `cwl` file (see [here](#cwl-wf)). 
+As mentioned previously, the usage of `targets` files is optional in
+`systemPipeR`. Since `targets` files provide an easy and efficient solution for
+organizing experimental variables, their usage is highly encouraged and well
+supported in `systemPipeR`.
 
-Users should note here, the usage of `targets` files is optional when using 
-`systemPipeR's` new CWL interface. Since for organizing experimental variables targets 
-files are extremely useful and user-friendly. Thus, we encourage users to keep using them.
+### Assembly of CL calls from three files
 
-### How to connect the parameter files and `targets` file information?
+The `SYSargsList` function constructs `SAL` instances from the three parameter
+files, that were introduced above (see [Fig 3](#cl-interface)). The path to each file is assigned to its own
+argument: `wf_file` is assigned the path of a `cwl` workflow file, `input_file`
+the path of a `yml` input file, and `targets` the path of a `targets` file. Additionally, a named
+vector is provided under the `inputvars` argument that defines which column
+values in the `targets` file are assigned to specific parameters in the `yml`
+file. A parameter connection is established where a name in `inputvars` has
+matching column and parameter names in the `targets` and `yml` files,
+respectively (Fig 3). A tagging syntax with the pattern `_XXX_` is used to
+indicate which parameters contain variables that will be assigned values from
+the `targets` file. The usage of this pattern is only recommended for
+consistency and easy identification, but not enforced.
 
-The constructor function creates an `SYSargsList` S4 class object connecting three input files:
-
-  - CWL command-line specification file (`wf_file` argument);
-  - Input variables (`input_file` argument);
-  - Targets file (`targets` argument).
-    
-As demonstrated above, the latter is optional for workflow steps lacking input files. 
-The connection between input variables (here defined by `input_file` argument) 
-and the `targets` file are defined under the `inputvars` argument. 
-A named vector is required, where each element name needs to match with column 
-names in the `targets` file, and the value must match the names of the *.yml* 
-variables. This is used to replace the CWL variable and construct all the command-line
-for that particular step. 
-
-The variable pattern `_XXXX_` is used to distinguish CWL variables that target 
-columns will replace. This pattern is recommended for consistency and easy identification
-but not enforced.
-
-The following imports a `.cwl` file (same example demonstrated above) for running
-the `echo Hello World` example. However, now we are connecting the variable defined 
-on the `.yml` file with the `targets` file inputs.
+The `SYSargslist` function call constructs the `echo` commands (CL calls) based on the 
+parameters provided by the above described parameter file instances (`cwl`, `yml` and `targets`) 
+as well as the variable mappings specified under the `inputvars` argument. 
 
 ```{r fromFile_example, eval=TRUE}
 HW_mul <- SYSargsList(step_name = "echo", 
@@ -1734,19 +1747,46 @@ HW_mul <- SYSargsList(step_name = "echo",
                       dir_path = dir_path, 
                       inputvars = c(Message = "_STRING_", SampleName = "_SAMPLE_"))
 HW_mul
+```
+
+The final CL calls (here `echo` command) can be returned with the `cmdlist` for
+each string given under the `Message` column of the `targets` file. The values under
+the `SampleName` column are used to name the corresponding output files, each with a
+`txt` extension. 
+
+```{r fromFile_example2, eval=TRUE}
 cmdlist(HW_mul)
 ```
 
-# Creating the CWL param files from the command-line
+# Auto-creation of CWL parameter files 
 
-Users need to define the command-line in a pseudo-bash script format:
+To streamline the process of generating CWL parameter files (both `cwl` and
+`yml`), users can simply provide the CL syntax for executing new software. This
+action will automatically create the corresponding CWL parameter files, which
+alleviates the need for manual creation of CWL files, reducing the
+burden on users. This functionality is implemented in systemPipeR’s
+`createParam` function group. 
+
+## Expected CL syntax 
+
+To use this functionality, CL calls need to be provided in a pseudo-bash script format
+and stored as a `character vector`. The following uses as example a CL call for the 
+HISAT2 software.
+
+Here is an example of a HISAT2 command.
+
+```{r cmd_orig, eval=FALSE}
+hisat2 -S ./results/M1A.sam -x ./data/tair10.fasta -k 1 -min-intronlen 30 -max-intronlen 3000 -threads 4 -U ./data/SRR446027_1.fastq.gz
+```
+
+The corresponding pseudo-bash format is given here.
 
 ```{r cmd, eval=TRUE}
 command <- "
     hisat2 \
     -S <F, out: ./results/M1A.sam> \
     -x <F: ./data/tair10.fasta> \
-     -k <int: 1> \
+    -k <int: 1> \
     -min-intronlen <int: 30> \
     -max-intronlen <int: 3000> \
     -threads <int: 4> \
@@ -1754,17 +1794,14 @@ command <- "
 "
 ```
 
-## Define prefix and defaults
+__Format specifications:__
 
-- First line is the base command. Each line is an argument with its default value.
-
-- For argument lines (starting from the second line), any word before the first 
-  space with leading `-` or `--` in each will be treated as a prefix, like `-S` or 
-  `--min`. Any line without this first word will be treated as no prefix. 
-  
-- All defaults are placed inside `<...>`.
-
-- First argument is the input argument type. `F` for "File", "int", "string" are unchanged.
+- The first line is the base command (`baseCommand`). Each following line is an argument with its default value.
+- For argument lines (starting from the second line), any string before the first 
+  space with leading `-` or `--` will be treated as a prefix, such as `-S` or 
+  `--min`. Lines without a prefix will be treated as a positional argument. 
+- All default settings are placed inside `<...>`.
+- The first argument is the type of the input. `F` for "File", "int", "string" are unchanged.
 
 - Optional: use the keyword `out` followed the type with a `,` comma separation to 
   indicate if this argument is also an CWL output.
