@@ -1,8 +1,8 @@
 Package: systemPipeR
 Type: Package
-Title: systemPipeR: workflow management and report generation environment
-Version: 2.11.4
-Date: 2024-07-14
+Title: systemPipeR: Workflow Environment for Data Analysis and Report Generation
+Version: 2.11.5
+Date: 2024-07-22
 Author: Thomas Girke
 Maintainer: Thomas Girke <thomas.girke@ucr.edu>
 biocViews: Genetics, Infrastructure, DataImport, Sequencing, RNASeq, RiboSeq, ChIPSeq, MethylSeq, SNP, GeneExpression, Coverage, GeneSetEnrichment, Alignment, QualityControl, ImmunoOncology, ReportWriting, WorkflowStep, WorkflowManagement
