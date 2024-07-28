@@ -1,6 +1,6 @@
 ---
-title: "systemPipeR: Workflows collection" 
-author: "Author: Daniela Cassol (danielac@ucr.edu) and Thomas Girke (thomas.girke@ucr.edu)"
+title: "systemPipeR: Workflow Templates" 
+author: "Author: Le Zhang, Daniela Cassol, and Thomas Girke"
 date: "Last update: `r format(Sys.time(), '%d %B, %Y')`" 
 output:
   BiocStyle::html_document:
@@ -10,11 +10,16 @@ output:
 package: systemPipeR
 vignette: |
   %\VignetteEncoding{UTF-8}
-  %\VignetteIndexEntry{systemPipeR: Workflows collection}
+  %\VignetteIndexEntry{systemPipeR: Workflow Templates}
   %\VignetteEngine{knitr::rmarkdown}
 fontsize: 14pt
 bibliography: bibtex.bib
 ---
+
+<!--
+- Compile from command-line
+Rscript -e "rmarkdown::render('systemPipeR_workflows.Rmd', c('BiocStyle::html_document'), clean=F); knitr::knit('systemPipeR_workflows.Rmd', tangle=FALSE)"
+-->
 
 ```{css, echo=FALSE}
 pre code {
@@ -40,306 +45,21 @@ suppressPackageStartupMessages({
 })
 ```
 
-**Note:** the most recent version of this tutorial can be found <a href="http://www.bioconductor.org/packages/devel/bioc/vignettes/systemPipeR/inst/doc/systemPipeR.html">here</a>.
+# Redirect notification
+
+The
+[systemPipeRdata](https://www.bioconductor.org/packages/devel/data/experiment/html/systemPipeRdata.html)
+package provides a collection of pre-built workflow templates that are ready to
+use from
+[systemPipeR](https://www.bioconductor.org/packages/devel/bioc/html/systemPipeR.html).
+These templates are described in detail in the associated `systemPipeRdata`
+overview vignette
+[here](https://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRdata.html),
+which includes instructions on how to use them.
 
-**Note:** if you use _`systemPipeR`_ in published research, please cite:
-Backman, T.W.H and Girke, T. (2016). _`systemPipeR`_: NGS Workflow and Report Generation Environment. *BMC Bioinformatics*, 17: 388. [10.1186/s12859-016-1241-0](https://doi.org/10.1186/s12859-016-1241-0).
-
-# Workflow templates
-
-The intended way of running _`systemPipeR`_ workflows is via _`*.Rmd`_ files, which 
-can be executed either line-wise in interactive mode or with a single command from 
-R or the command-line. This way comprehensive and reproducible analysis reports 
-can be generated in PDF or HTML format in a fully automated manner by making use 
-of the highly functional reporting utilities available for R. 
-
-Templates for setting up custom project reports are provided as _`*.Rmd`_ files 
-by the helper package _`systemPipeRdata`_ and in the vignettes subdirectory of
-_`systemPipeR`_. The corresponding HTML of these report templates are available here: [_`systemPipeRNAseq`_](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRNAseq.html), [_`systemPipeRIBOseq`_](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRIBOseq.html), [_`systemPipeChIPseq`_](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeChIPseq.html) and [_`systemPipeVARseq`_](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeVARseq.html). To work with _`*.Rmd`_ files efficiently, basic knowledge of [_`knitr`_](http://yihui.name/knitr/) and [_`Latex`_](http://www.latex-project.org/) or [_`R Markdown v2`_](http://rmarkdown.rstudio.com/) is required. 
-
-## Directory Structure
-
-```{r dir, eval=TRUE, echo=FALSE, out.width="100%", fig.align = "center", fig.cap= "*systemPipeR's* preconfigured directory structure."}
-knitr::include_graphics(system.file("extdata/images", "spr_project.png", package = "systemPipeR"))  
-```
-
-The working environment of the sample data loaded in the previous step contains
-the following pre-configured directory structure. Directory names are indicated
-in  <span style="color:grey">***green***</span>. Users can change this
-structure as needed, but need to adjust the code in their workflows
-accordingly. 
-
-* <span style="color:green">_**workflow/**_</span> (*e.g.* *rnaseq/*) 
-    + This is the root directory of the R session running the workflow.
-    + Run script ( *\*.Rmd*) and sample annotation (*targets.txt*) files are located here.
-    + Note, this directory can have any name (*e.g.* <span style="color:green">_**rnaseq**_</span>, <span style="color:green">_**varseq**_</span>). Changing its name does not require any modifications in the run script(s).
-  + **Important subdirectories**: 
-    + <span style="color:green">_**param/**_</span> 
-        + Stores non-CWL parameter files such as: *\*.param*, *\*.tmpl* and *\*.run.sh*. These files are only required for backwards compatibility to run old workflows using the previous custom command-line interface.
-        + <span style="color:green">_**param/cwl/**_</span>: This subdirectory stores all the CWL parameter files. To organize workflows, each can have its own subdirectory, where all `CWL param` and `input.yml` files need to be in the same subdirectory. 
-    + <span style="color:green">_**data/**_ </span>
-        + FASTQ files
-        + FASTA file of reference (*e.g.* reference genome)
-        + Annotation files
-        + etc.
-    + <span style="color:green">_**results/**_</span>
-        + Analysis results are usually written to this directory, including: alignment, variant and peak files (BAM, VCF, BED); tabular result files; and image/plot files
-        + Note, the user has the option to organize results files for a given sample and analysis step in a separate subdirectory.
-
-The following parameter files are included in each workflow template:
-
-1. *`targets.txt`*: initial one provided by user; downstream *`targets_*.txt`* files are generated automatically
-2. *`*.param/cwl`*: defines parameter for input/output file operations, *e.g.*:
-    + *`hisat2-se/hisat2-mapping-se.cwl`* 
-    + *`hisat2-se/hisat2-mapping-se.yml`*
-3. *`*_run.sh`*: optional bash scripts 
-4. Configuration files for computer cluster environments (skip on single machines):
-    + *`.batchtools.conf.R`*: defines the type of scheduler for *`batchtools`* pointing to template file of cluster, and located in user's home directory
-    + *`*.tmpl`*: specifies parameters of scheduler used by a system, *e.g.* Torque, SGE, Slurm, etc.
-
-# RNA-Seq Workflow
-
-This workflow demonstrates how to use various utilities for building and running automated end-to-end analysis workflows for _`RNA-Seq`_ data. 
-
-**The full workflow can be found here**:
-[HTML](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRNAseq.html), [.Rmd](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRNAseq.Rmd), and [.R](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRNAseq.R).
-
-## Loading package and workflow template
-
-Load the _`RNA-Seq`_ sample workflow into your current working directory.
-
-```{r genRna_workflow_single, eval=FALSE}
-library(systemPipeRdata)
-genWorkenvir(workflow="rnaseq")
-setwd("rnaseq")
-```
-
-## Create the workflow 
-
-This template provides some common steps for a `RNAseq` workflow. One can add, remove, modify 
-workflow steps by operating on the `sal` object. 
-
-```{r project_rnaseq, eval=FALSE}
-sal <- SPRproject() 
-sal <- importWF(sal, file_path = "systemPipeRNAseq.Rmd", verbose = FALSE)
-```
-
-**Workflow includes following steps:**
-
-1. Read preprocessing
-    + Quality filtering (trimming)
-    + FASTQ quality report
-2. Alignments: _`HISAT2`_ (or any other RNA-Seq aligner)
-3. Alignment stats 
-4. Read counting 
-5. Sample-wise correlation analysis
-6. Analysis of differentially expressed genes (DEGs)
-7. GO term enrichment analysis
-8. Gene-wise clustering
-
-## Run workflow
-
-```{r run_rnaseq, eval=FALSE}
-sal <- runWF(sal)
-```
-
-## Workflow visualization 
-
-```{r plot_rnaseq, eval=FALSE}
-plotWF(sal)
-```
-
-## Report generation
-
-```{r report_rnaseq, eval=FALSE}
-sal <- renderReport(sal)
-sal <- renderLogs(sal)
-```
-
-# ChIP-Seq Workflow
-
-This workflow demonstrates how to use various utilities for building and running automated end-to-end analysis workflows for _`ChIP-Seq`_ data. 
-
-**The full workflow can be found here**: [HTML](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeChIPseq.html), [.Rmd](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeChIPseq.Rmd), and [.R](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeChIPseq.R).
-
-## Loading package and workflow template
-
-Load the _`ChIP-Seq`_ sample workflow into your current working directory.
-
-```{r genChip_workflow, eval=FALSE}
-library(systemPipeRdata)
-genWorkenvir(workflow="chipseq")
-setwd("chipseq")
-```
-
-**Workflow includes following steps:**
-
-1. Read preprocessing
-    + Quality filtering (trimming)
-    + FASTQ quality report
-2. Alignments: _`Bowtie2`_ or _`rsubread`_
-3. Alignment stats 
-4. Peak calling: _`MACS2`_
-5. Peak annotation with genomic context
-6. Differential binding analysis
-7. GO term enrichment analysis
-8. Motif analysis
-
-## Create the workflow 
-
-This template provides some common steps for a `ChIPseq` workflow. One can add, remove, modify 
-workflow steps by operating on the `sal` object. 
-
-```{r project_chipseq, eval=FALSE}
-sal <- SPRproject() 
-sal <- importWF(sal, file_path = "systemPipeChIPseq.Rmd", verbose = FALSE)
-```
-
-## Run workflow
-
-```{r run_chipseq, eval=FALSE}
-sal <- runWF(sal)
-```
-
-## Workflow visualization 
-
-```{r plot_chipseq, eval=FALSE}
-plotWF(sal)
-```
-
-## Report generation
-
-```{r report_chipseq, eval=FALSE}
-sal <- renderReport(sal)
-sal <- renderLogs(sal)
-```
-
-# VAR-Seq Workflow 
-
-This workflow demonstrates how to use various utilities for building and running automated end-to-end analysis workflows for _`VAR-Seq`_ data. 
-
-**The full workflow can be found here:** [HTML](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeVARseq.html), [.Rmd](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeVARseq.Rmd), and [.R](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeVARseq.R).
-
-## Loading package and workflow template
-
-Load the _`VAR-Seq`_ sample workflow into your current working directory.
-
-```{r genVar_workflow_single, eval=FALSE}
-library(systemPipeRdata)
-genWorkenvir(workflow="varseq")
-setwd("varseq")
-```
-
-**Workflow includes following steps:**
-
-1. Read preprocessing
-    + Quality filtering (trimming)
-    + FASTQ quality report
-2. Alignments: _`gsnap`_, _`bwa`_
-3. Variant calling: _`VariantTools`_, _`GATK`_, _`BCFtools`_
-4. Variant filtering: _`VariantTools`_ and _`VariantAnnotation`_
-5. Variant annotation: _`VariantAnnotation`_
-6. Combine results from many samples
-7. Summary statistics of samples
-
-## Create the workflow 
-
-This template provides some common steps for a `VARseq` workflow. One can add, remove, modify 
-workflow steps by operating on the `sal` object. 
-
-```{r project_varseq, eval=FALSE}
-sal <- SPRproject() 
-sal <- importWF(sal, file_path = "systemPipeVARseq.Rmd", verbose = FALSE)
-```
-
-## Run workflow
-
-```{r run_varseq, eval=FALSE}
-sal <- runWF(sal)
-```
-
-## Workflow visualization 
-
-```{r plot_varseq, eval=FALSE}
-plotWF(sal)
-```
-
-## Report generation
-
-```{r report_varseq, eval=FALSE}
-sal <- renderReport(sal)
-sal <- renderLogs(sal)
-```
-
-# Ribo-Seq Workflow
-
-This workflow demonstrates how to use various utilities for building and running automated end-to-end analysis workflows for _`RIBO-Seq`_ data. 
-
-**The full workflow can be found here:**
-[HTML](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRIBOseq.html), [.Rmd](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRIBOseq.Rmd), and [.R](http://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRIBOseq.R).
-
-## Loading package and workflow template
-
-Load the _`RIBO-Seq`_ sample workflow into your current working directory.
-
-```{r genRibo_workflow_single, eval=FALSE}
-library(systemPipeRdata)
-genWorkenvir(workflow="riboseq")
-setwd("riboseq")
-```
-
-**Workflow includes following steps:**
-
-1. Read preprocessing
-    + Adaptor trimming and quality filtering
-    + FASTQ quality report
-2. Alignments: _`HISAT2`_ (or any other RNA-Seq aligner)
-3. Alignment stats
-4. Compute read distribution across genomic features
-5. Adding custom features to workflow (e.g. uORFs)
-6. Genomic read coverage along transcripts
-7. Read counting 
-8. Sample-wise correlation analysis
-9. Analysis of differentially expressed genes (DEGs)
-10. GO term enrichment analysis
-11. Gene-wise clustering
-12. Differential ribosome binding (translational efficiency)
-
-This template provides some common steps for a `RIBOseq` workflow. One can add, remove, modify 
-workflow steps by operating on the `sal` object. 
-
-```{r project_riboseq, eval=FALSE}
-sal <- SPRproject() 
-sal <- importWF(sal, file_path = "systemPipeRIBOseq.Rmd", verbose = FALSE)
-```
-
-## Run workflow
-
-```{r run_riboseq, eval=FALSE}
-sal <- runWF(sal)
-```
-
-## Workflow visualization 
-
-```{r plot_riboseq, eval=FALSE}
-plotWF(sal)
-```
-
-## Report generation
-
-```{r report_riboseq, eval=FALSE}
-sal <- renderReport(sal)
-sal <- renderLogs(sal)
-```
-
-# Version information
-
-```{r sessionInfo}
-sessionInfo()
-```
 
 # Funding
 
-This project is funded by NSF award [ABI-1661152](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1661152). 
+This project is funded by awards from the National Science Foundation ([ABI-1661152](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1661152)], 
+and the National Institute on Aging of the National Institutes of Health ([U19AG023122](https://reporter.nih.gov/project-details/9632486)). 
 
-# References

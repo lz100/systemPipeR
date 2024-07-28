@@ -115,6 +115,16 @@ information in `targets` with CWL parameters are described
 knitr::include_graphics("images/SPR_CWL_hello.png")
 ```
 
+## Workflow templates 
+`systemPipeRdata`, a companion package to `systemPipeR`, offers a collection of
+workflow templates that are ready to use. With a single command, users can
+easily load these templates onto their systems. Once loaded, users have the
+flexibility to utilize the templates as they are or modify them as needed. More
+in-depth information can be found in the main vignette of systemPipeRdata,
+which can be accessed
+[here](https://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRdata.html).
+
+
 ## Other functionalities
 <!-- _`systemPipeR's`_ CWL interface provides two
 options to run command-line tools and workflows based on CWL. First, one can
@@ -167,7 +177,8 @@ The following demonstrates how to initialize, run and monitor workflows, and sub
 
 __1. Create workflow environment.__ The chosen example uses the `genWorenvir` function from
 the `systemPipeRdata` package to create an RNA-Seq workflow environment that is fully populated with a small test data set, including FASTQ files, reference genome and annotation data. After this, the user's R session needs to be directed 
-into the resulting `rnaseq` directory (here with `setwd`). 
+into the resulting `rnaseq` directory (here with `setwd`). A list of available workflow templates 
+is available in the vignette of the `systemPipeRdata` package [here](https://www.bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRdata.html#wf-bioc-collection).
 
 ```{r eval=FALSE}
 systemPipeRdata::genWorkenvir(workflow = "rnaseq")
