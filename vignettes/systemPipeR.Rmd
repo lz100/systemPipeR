@@ -141,8 +141,8 @@ functions that are useful for designing and testing workflows, such as a
 targets) the exact CL strings for each step prior to running a CL tool. 
 [Auto-generation of CWL](#cwl-auto-generation) parameter files is also supported. Here, users can simply 
 provide the CL strings for a CL software of interest to a rendering function that generates 
-the corresponding `*.cwl` and `*.yml` files for them. And auto-conversion of workflows to 
-executable [Bash scripts](#bash-script).
+the corresponding `*.cwl` and `*.yml` files for them. Auto-conversion of workflows to 
+executable [Bash scripts](#bash-script) is also supported.
 
 
 <!--
@@ -251,7 +251,7 @@ sal
 
 __4. Run workflow.__ Next, one can execute the entire workflow from start to
 finish. The `steps` argument of `runWF` can be used to run only selected steps.
-For details, consult the help file with `?runWF`. During the run detailed status
+For details, consult the help file with `?runWF`. During the run, detailed status
 information will be provided for each workflow step.
 
 ```{r eval=FALSE}
@@ -627,25 +627,25 @@ length(sal)
 
 ## Constructing workflows
 
-Workflows in `systemPipeR` can be constructed stepwise in [interactive
-mode](#appendstep) by evaluating the code of individual workflow steps in the R
-console one-by-one. Alternatively, one can import all steps of a workflow with
-a [single import command](#importWF) at once, either from an R script or an R
-Markdown workflow file. For the purpose of explaining the details about
-constructing and connecting different types of workflow steps, this tutorial
-section introduces first the interactive approach. After this the automated
-import of entire workflows with many steps is explained where the individual
-steps are defined the same way. In all cases, workflow steps are loaded to a
-`SAL` workflow container with the proper connectivity information using
-`systemPipeR's` `appendStep` method where steps can be comprised of R code or
-CL calls.
+In systemPipeR, workflows can be incrementally constructed in [interactive mode](#appendstep)
+by sequentially evaluating code for individual workflow steps in the R console.
+Alternatively, all steps of a workflow can be imported simultaneously from an R
+script or an R Markdown workflow file using a [single import command](#importWF).
+To explain constructing and connecting different types of workflow steps, this
+tutorial section introduces the interactive approach first. After that, the
+automated import of entire workflows with many steps is explained, where the
+individual steps are defined the same way.
+In all cases, workflow steps are loaded into a `SAL` workflow container with the
+proper connectivity information using `systemPipeR's` `appendStep` method. This
+method allows steps to be comprised of R code or CL calls.
 
 ### Stepwise construction  {#appendstep}
 
 The following demonstrates how to design, load and run workflows using a simple
 data processing routine as an example. This mini workflow will export a test
 dataset to multiple files, compress/decompress the exported files, import them back 
-into R, and then perform a simple statistical analysis and plot the results. 
+into R, and then perform a simple statistical analysis and plot the results. The file 
+compression steps demonstrate the usage of the CL interface.
 
 The `sal` object of the new workflow project (directory named`.SPRproject`) was
 intialized in the previous section. At this point this `sal` instance contains
@@ -973,11 +973,12 @@ for more information about this process.
 sal <- runWF(sal)
 ```
 
-The `runWF` function allows to choose one or multiple steps to be 
-executed via its `steps` argument. When using partial workflow executions, it is important 
-to pay attention to the requirements of the dependency graph of a workflow. If a selected step 
-depends on one or more previous steps, that have not been executed and completed yet, 
-then the execution of the chosen step(s) will not be possible. 
+The `runWF` function allows to choose one or multiple steps to be executed via
+its `steps` argument. When using partial workflow executions, it is important
+to pay attention to the requirements of the dependency graph of a workflow. If
+a selected step depends on one or more previous steps, that have not been
+executed yet, then the execution of the chosen step(s) will not be possible
+until the previous steps have been completed. 
 
 ```{r runWF_error, eval=FALSE}
 sal <- runWF(sal, steps = c(1,3))
